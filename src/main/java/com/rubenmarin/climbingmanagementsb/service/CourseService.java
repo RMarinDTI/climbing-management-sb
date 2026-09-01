@@ -2,7 +2,9 @@ package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import com.rubenmarin.climbingmanagementsb.repository.CourseRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +22,7 @@ public class CourseService {
         return courseRepository.findAll();
     }
 
-    public Optional<Course> findById(Long id) {
-        return courseRepository.findById(id);
+    public Course findById(Long id) {
+        return courseRepository.findById(id).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
     }
 }

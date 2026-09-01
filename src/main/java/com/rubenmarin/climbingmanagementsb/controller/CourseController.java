@@ -30,7 +30,7 @@ public class CourseController {
     }
 
     @GetMapping("/courses/{id}")
-    public Optional<Course> getCourseById(@PathVariable Long id) {
+    public Course getCourseById(@PathVariable Long id) {
         return courseService.findById(id);
     }
 
