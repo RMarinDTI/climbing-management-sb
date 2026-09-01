@@ -3,9 +3,9 @@ package com.rubenmarin.climbingmanagementsb.controller;
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.service.CourseService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +34,11 @@ public class CourseController {
         return courseService.findById(id);
     }
 
+    @PostMapping("/courses")
+    public ResponseEntity<Course> createCourse(@RequestBody Course course) {
+        Course created = courseService.create(course);
 
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
 
 }

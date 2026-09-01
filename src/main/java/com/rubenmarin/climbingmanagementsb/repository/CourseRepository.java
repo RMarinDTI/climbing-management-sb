@@ -12,6 +12,6 @@ public interface CourseRepository {
 
     Optional<Course> findById(Long id);
 
-
+    Course save(Course course);
 
 }

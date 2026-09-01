@@ -4,6 +4,8 @@ import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -11,20 +13,36 @@ import java.util.stream.Stream;
 @Repository
 public class InMemoryCourseRepository implements CourseRepository {
 
+    private final List<Course> courses = new ArrayList<Course>();
+
+    public InMemoryCourseRepository() {
+        courses.add(new Course(1L, "Sport Climbing", 120.0, Difficulty.EASY));
+        courses.add(new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM));
+        courses.add(new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
+    }
+
     @Override
     public List<Course> findAll() {
-        return List.of(
-                new Course(1L, "Sport Climbing", 120.0, Difficulty.EASY),
-                new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM),
-                new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD)
-        );
+        return courses;
     }
 
     @Override
     public Optional<Course> findById(Long id) {
         Stream<Course> st = this.findAll().stream().filter(course -> course.id().equals(id));
-        Optional<Course> result = st.findAny();
+        Optional<Course> result = st.findFirst();
         return result;
+    }
+
+    @Override
+    public Course save(Course course) {
+
+        Long lastId = courses.stream().max(Comparator.comparing(Course::id)).map(Course::id).orElse(0L);
+
+        Course newCourse = new Course(lastId+1L, course.name(), course.price(), course.difficulty());
+
+        courses.add(newCourse);
+
+        return newCourse;
     }
 
 }

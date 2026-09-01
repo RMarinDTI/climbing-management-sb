@@ -25,4 +25,9 @@ public class CourseService {
     public Course findById(Long id) {
         return courseRepository.findById(id).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
     }
+
+    public Course create(Course course) {
+        return courseRepository.save(course);
+
+    }
 }
