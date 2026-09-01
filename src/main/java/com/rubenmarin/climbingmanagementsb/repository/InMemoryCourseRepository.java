@@ -5,6 +5,8 @@ import com.rubenmarin.climbingmanagementsb.record.Course;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Repository
 public class InMemoryCourseRepository implements CourseRepository {
@@ -17,4 +19,12 @@ public class InMemoryCourseRepository implements CourseRepository {
                 new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD)
         );
     }
+
+    @Override
+    public Optional<Course> findById(Long id) {
+        Stream<Course> st = this.findAll().stream().filter(course -> course.id().equals(id));
+        Optional<Course> result = st.findAny();
+        return result;
+    }
+
 }
