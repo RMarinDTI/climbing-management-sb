@@ -2,8 +2,10 @@ package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import com.rubenmarin.climbingmanagementsb.repository.CourseRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -26,7 +28,7 @@ public class CourseService {
         return courseRepository.findById(id).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
     }
 
-    public Course create(Course course) {
+    public Course create( @Valid @RequestBody Course course) {
         return courseRepository.save(course);
 
     }

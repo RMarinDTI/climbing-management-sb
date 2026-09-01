@@ -1,11 +1,21 @@
 package com.rubenmarin.climbingmanagementsb.record;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 
 public record Course(
         Long id,
+
+        @NotBlank
         String name,
+
+        @Positive
         Double price,
+
+        @NotNull
         Difficulty difficulty
 ) {
 }

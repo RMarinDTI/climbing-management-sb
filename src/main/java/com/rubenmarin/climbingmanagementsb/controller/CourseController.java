@@ -3,6 +3,7 @@ package com.rubenmarin.climbingmanagementsb.controller;
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.service.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class CourseController {
     }
 
     @PostMapping("/courses")
-    public ResponseEntity<Course> createCourse(@RequestBody Course course) {
+    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course) {
         Course created = courseService.create(course);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
