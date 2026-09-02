@@ -48,28 +48,31 @@ public class InMemoryCourseRepository implements CourseRepository {
 
     @Override
     public Optional<Course> update(Long id, Course course) {
-
         Optional<Course> found = this.findById(id);
-
         if (found.isEmpty()) {
             return Optional.empty();
         }
-            Course newCourse = new Course(id, course.name(), course.price(), course.difficulty());
-            int posicion = -1;
-            List<Course> allCourses = this.findAll();
-            for (int i = 0; i < allCourses.size(); i++) {
-                if (allCourses.get(i).id().equals(id)) {
-                    posicion = i;
-                    break;
-                }
+        Course newCourse = new Course(id, course.name(), course.price(), course.difficulty());
+        int posicion = -1;
+        List<Course> allCourses = this.findAll();
+        for (int i = 0; i < allCourses.size(); i++) {
+            if (allCourses.get(i).id().equals(id)) {
+                posicion = i;
+                break;
             }
-
-            allCourses.set(posicion, newCourse);
-
+        }
+        allCourses.set(posicion, newCourse);
         return Optional.of(newCourse);
-
-
-
     }
 
+
+    @Override
+    public Optional<Course> delete(Long id) {
+        Optional<Course> found = this.findById(id);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+     this.findAll().remove(found.get());
+        return found;
+    }
 }

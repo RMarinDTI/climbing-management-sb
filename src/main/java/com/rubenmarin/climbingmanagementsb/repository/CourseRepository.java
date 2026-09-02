@@ -16,4 +16,6 @@ public interface CourseRepository {
 
     Optional <Course> update(Long Id, Course course);
 
+    Optional <Course> delete(Long Id);
+
 }

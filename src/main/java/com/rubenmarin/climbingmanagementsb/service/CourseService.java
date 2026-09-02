@@ -38,4 +38,10 @@ public class CourseService {
         return courseRepository.update(id, course).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
 
     }
+
+    public Course delete( Long id ) {
+
+        return courseRepository.delete(id).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
+
+    }
 }

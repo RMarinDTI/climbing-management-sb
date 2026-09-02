@@ -49,4 +49,11 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
+    @DeleteMapping ("/courses/{id}")
+    public ResponseEntity<Course> deleteCourse(@PathVariable Long id) {
+        Course deleted = courseService.delete(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }
