@@ -14,4 +14,6 @@ public interface CourseRepository {
 
     Course save(Course course);
 
+    Optional <Course> update(Long Id, Course course);
+
 }

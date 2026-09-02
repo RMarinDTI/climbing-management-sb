@@ -32,4 +32,10 @@ public class CourseService {
         return courseRepository.save(course);
 
     }
+
+    public Course update( Long id , @Valid @RequestBody Course course) {
+
+        return courseRepository.update(id, course).orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Course not found"));
+
+    }
 }

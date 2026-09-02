@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Repository
@@ -38,11 +39,37 @@ public class InMemoryCourseRepository implements CourseRepository {
 
         Long lastId = courses.stream().max(Comparator.comparing(Course::id)).map(Course::id).orElse(0L);
 
-        Course newCourse = new Course(lastId+1L, course.name(), course.price(), course.difficulty());
+        Course newCourse = new Course(lastId + 1L, course.name(), course.price(), course.difficulty());
 
         courses.add(newCourse);
 
         return newCourse;
+    }
+
+    @Override
+    public Optional<Course> update(Long id, Course course) {
+
+        Optional<Course> found = this.findById(id);
+
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+            Course newCourse = new Course(id, course.name(), course.price(), course.difficulty());
+            int posicion = -1;
+            List<Course> allCourses = this.findAll();
+            for (int i = 0; i < allCourses.size(); i++) {
+                if (allCourses.get(i).id().equals(id)) {
+                    posicion = i;
+                    break;
+                }
+            }
+
+            allCourses.set(posicion, newCourse);
+
+        return Optional.of(newCourse);
+
+
+
     }
 
 }
