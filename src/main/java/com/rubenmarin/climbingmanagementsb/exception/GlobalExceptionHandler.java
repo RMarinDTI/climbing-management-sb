@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<?> handleStatusException(ResponseStatusException ex) {
 
-    NotFoundErrorResponse  response = new NotFoundErrorResponse(new Date().toString(), ex.getStatusCode().value(), ex.getReason());
+        ErrorResponse response = new ErrorResponse(new Date().toString(), ex.getStatusCode().value(), ex.getReason());
 
         return ResponseEntity.status(ex.getStatusCode()).body(response);
     }
