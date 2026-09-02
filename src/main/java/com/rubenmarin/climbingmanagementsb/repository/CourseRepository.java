@@ -1,5 +1,6 @@
 package com.rubenmarin.climbingmanagementsb.repository;
 
+import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.record.Course;
 import org.springframework.stereotype.Repository;
 
@@ -14,8 +15,8 @@ public interface CourseRepository {
 
     Course save(Course course);
 
-    Optional <Course> update(Long Id, Course course);
+    Optional<Course> update(Long Id, Course course);
 
-    Optional <Course> delete(Long Id);
+    Optional<Course> delete(Long Id);
 
 }

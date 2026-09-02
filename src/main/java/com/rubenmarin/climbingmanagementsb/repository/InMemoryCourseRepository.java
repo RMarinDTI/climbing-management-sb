@@ -36,13 +36,9 @@ public class InMemoryCourseRepository implements CourseRepository {
 
     @Override
     public Course save(Course course) {
-
         Long lastId = courses.stream().max(Comparator.comparing(Course::id)).map(Course::id).orElse(0L);
-
         Course newCourse = new Course(lastId + 1L, course.name(), course.price(), course.difficulty());
-
         courses.add(newCourse);
-
         return newCourse;
     }
 
@@ -72,7 +68,7 @@ public class InMemoryCourseRepository implements CourseRepository {
         if (found.isEmpty()) {
             return Optional.empty();
         }
-     this.findAll().remove(found.get());
+        this.findAll().remove(found.get());
         return found;
     }
 }
