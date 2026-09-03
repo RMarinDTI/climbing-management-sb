@@ -38,22 +38,30 @@ public class CourseController {
     @PostMapping("/courses")
     public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course) {
         Course created = courseService.create(course);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PutMapping ("/courses/{id}")
+    @PutMapping("/courses/{id}")
     public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course) {
         Course updated = courseService.update(id, course);
-
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
-    @DeleteMapping ("/courses/{id}")
+    @DeleteMapping("/courses/{id}")
     public ResponseEntity<Course> deleteCourse(@PathVariable Long id) {
         Course deleted = courseService.delete(id);
-
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/courses/most-expensive")
+    public ResponseEntity<Course> findMostExpensiveCourse() {
+        Course mostExpensive = courseService.findMostExpensive();
+        return ResponseEntity.status(HttpStatus.OK).body(mostExpensive);
+    }
+
+    @GetMapping("/courses/difficulty/{difficulty}")
+    public List<Course> findByDifficulty(@PathVariable Difficulty difficulty) {
+        return courseService.findByDifficulty(difficulty);
     }
 
 }
