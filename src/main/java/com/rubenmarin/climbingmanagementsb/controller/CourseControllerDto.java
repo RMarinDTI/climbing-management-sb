@@ -1,22 +1,21 @@
 package com.rubenmarin.climbingmanagementsb.controller;
 
-import com.rubenmarin.climbingmanagementsb.record.Course;
+import com.rubenmarin.climbingmanagementsb.record.CourseRecord;
 import com.rubenmarin.climbingmanagementsb.Difficulty;
-import com.rubenmarin.climbingmanagementsb.service.CourseService;
+import com.rubenmarin.climbingmanagementsb.service.CourseServiceDto;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-public class CourseController {
+public class CourseControllerDto {
 
-    private final CourseService courseService;
+    private final CourseServiceDto courseService;
 
-    public CourseController(CourseService courseService) {
+    public CourseControllerDto(CourseServiceDto courseService) {
         this.courseService = courseService;
     }
 
@@ -26,41 +25,41 @@ public class CourseController {
     }
 
     @GetMapping("/courses")
-    public List<Course> getCourses() {
+    public List<CourseRecord> getCourses() {
         return courseService.findAll();
     }
 
     @GetMapping("/courses/{id}")
-    public Course getCourseById(@PathVariable Long id) {
+    public CourseRecord getCourseById(@PathVariable Long id) {
         return courseService.findById(id);
     }
 
     @PostMapping("/courses")
-    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course) {
-        Course created = courseService.create(course);
+    public ResponseEntity<CourseRecord> createCourse(@Valid @RequestBody CourseRecord course) {
+        CourseRecord created = courseService.create(course);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/courses/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course) {
-        Course updated = courseService.update(id, course);
+    public ResponseEntity<CourseRecord> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseRecord course) {
+        CourseRecord updated = courseService.update(id, course);
         return ResponseEntity.status(HttpStatus.OK).body(updated);
     }
 
     @DeleteMapping("/courses/{id}")
-    public ResponseEntity<Course> deleteCourse(@PathVariable Long id) {
-        Course deleted = courseService.delete(id);
+    public ResponseEntity<CourseRecord> deleteCourse(@PathVariable Long id) {
+        CourseRecord deleted = courseService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/courses/most-expensive")
-    public ResponseEntity<Course> findMostExpensiveCourse() {
-        Course mostExpensive = courseService.findMostExpensive();
+    public ResponseEntity<CourseRecord> findMostExpensiveCourse() {
+        CourseRecord mostExpensive = courseService.findMostExpensive();
         return ResponseEntity.status(HttpStatus.OK).body(mostExpensive);
     }
 
     @GetMapping("/courses/difficulty/{difficulty}")
-    public List<Course> findByDifficulty(@PathVariable Difficulty difficulty) {
+    public List<CourseRecord> findByDifficulty(@PathVariable Difficulty difficulty) {
         return courseService.findByDifficulty(difficulty);
     }
 

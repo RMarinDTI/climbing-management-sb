@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 
-public record Course(
+public record CourseRecord(
         Long id,
 
         @NotBlank

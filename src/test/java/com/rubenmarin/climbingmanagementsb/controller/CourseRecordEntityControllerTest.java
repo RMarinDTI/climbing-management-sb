@@ -1,8 +1,8 @@
 package com.rubenmarin.climbingmanagementsb.controller;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
-import com.rubenmarin.climbingmanagementsb.record.Course;
-import com.rubenmarin.climbingmanagementsb.service.CourseService;
+import com.rubenmarin.climbingmanagementsb.record.CourseRecord;
+import com.rubenmarin.climbingmanagementsb.service.CourseServiceDto;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
@@ -22,8 +21,8 @@ import java.util.List;
 
 
 //"Quiero levantar la infraestructura MVC necesaria para probar CourseController, pero no toda la aplicación."
-@WebMvcTest(CourseController.class)
-public class CourseControllerTest {
+@WebMvcTest(CourseControllerDto.class)
+public class CourseRecordEntityControllerTest {
 
     @Autowired
     MockMvc mockMvc;
@@ -34,7 +33,7 @@ public class CourseControllerTest {
 
     //1. Mock
     @MockitoBean
-    CourseService courseService;
+    CourseServiceDto courseService;
 
     //En nuestros tests de Service hacíamos: when → assert → verify
     // Con MockMvc estamos haciendo: perform → andExpect → andExpect
@@ -52,10 +51,10 @@ public class CourseControllerTest {
     void shouldFindAllCourses() throws Exception {
 
         // 1. Given / Stubbing
-        List<Course> courses = List.of(
-                new Course(1L, "Sport Climbing", 120.0, Difficulty.EASY),
-                new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM),
-                new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
+        List<CourseRecord> courses = List.of(
+                new CourseRecord(1L, "Sport Climbing", 120.0, Difficulty.EASY),
+                new CourseRecord(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM),
+                new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
 
         // 2. When
         Mockito.when(courseService.findAll()).thenReturn(courses);
@@ -74,12 +73,12 @@ public class CourseControllerTest {
     void shouldFindCourse() throws Exception {
 
         // 1. Given / Stubbing
-        List<Course> courses = List.of(
-                new Course(1L, "Sport Climbing", 120.0, Difficulty.EASY),
-                new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM),
-                new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
+        List<CourseRecord> courses = List.of(
+                new CourseRecord(1L, "Sport Climbing", 120.0, Difficulty.EASY),
+                new CourseRecord(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM),
+                new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
 
-        Course expectedCourse = new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM);
+        CourseRecord expectedCourse = new CourseRecord(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM);
 
         // 2. When
         Mockito.when(courseService.findById(2L)).thenReturn(expectedCourse);
@@ -114,8 +113,8 @@ public class CourseControllerTest {
 
     @Test
     void shouldCreateCourse() throws Exception {
-        Course course = new Course(null, "Trad Climbing", 150.0, Difficulty.HARD);
-        Course savedCourse = new Course(4L, "Trad Climbing", 150.0, Difficulty.HARD);
+        CourseRecord course = new CourseRecord(null, "Trad Climbing", 150.0, Difficulty.HARD);
+        CourseRecord savedCourse = new CourseRecord(4L, "Trad Climbing", 150.0, Difficulty.HARD);
         // 2. When
         Mockito.when(courseService.create(course)).thenReturn(savedCourse);
 
@@ -165,8 +164,8 @@ public class CourseControllerTest {
     void shouldUpdateCourse() throws Exception {
 
 
-        Course modifiedCourse = new Course(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
-        Course updatedCourse = new Course(2L, "Multi Pitch Upd", 135.0, Difficulty.HARD);
+        CourseRecord modifiedCourse = new CourseRecord(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
+        CourseRecord updatedCourse = new CourseRecord(2L, "Multi Pitch Upd", 135.0, Difficulty.HARD);
         // 2. When
         Mockito.when(courseService.update(2L, modifiedCourse)).thenReturn(updatedCourse);
 
@@ -189,7 +188,7 @@ public class CourseControllerTest {
 
     @Test
     void shouldReturn404WhenUpdatingNonExistingCourse() throws Exception {
-        Course modifiedCourse = new Course(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
+        CourseRecord modifiedCourse = new CourseRecord(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
 
         // 2. When
         Mockito.when(courseService.update(99L, modifiedCourse)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
@@ -241,7 +240,7 @@ public class CourseControllerTest {
     @Test
     void shouldFindMostExpensiveCourse() throws Exception {
         // 1. Given
-        Course mostExpensive = new Course(3L, "Alpine Climbing", 140.0, Difficulty.HARD);
+        CourseRecord mostExpensive = new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD);
 
         // 2. When
         Mockito.when(courseService.findMostExpensive()).thenReturn(mostExpensive);
@@ -263,8 +262,8 @@ public class CourseControllerTest {
     @Test
     void shouldFindCoursesByDifficulty() throws Exception {
         // 1. Given
-           List<Course>   expectedCourses = List.of(
-                new Course(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM));
+           List<CourseRecord>   expectedCourses = List.of(
+                new CourseRecord(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM));
 
 
         // 2. When
