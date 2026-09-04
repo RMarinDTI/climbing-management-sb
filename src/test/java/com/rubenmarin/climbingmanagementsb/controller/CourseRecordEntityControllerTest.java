@@ -1,6 +1,8 @@
 package com.rubenmarin.climbingmanagementsb.controller;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
+import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
+import com.rubenmarin.climbingmanagementsb.exception.ExceptionMsg;
 import com.rubenmarin.climbingmanagementsb.record.CourseRecord;
 import com.rubenmarin.climbingmanagementsb.service.CourseServiceDto;
 import org.hamcrest.Matchers;
@@ -30,24 +32,13 @@ public class CourseRecordEntityControllerTest {
     @Autowired
     ObjectMapper objectMapper;
 
-
     //1. Mock
     @MockitoBean
-    CourseServiceDto courseService;
+    CourseServiceDto courseServiceDto;
 
     //En nuestros tests de Service hacíamos: when → assert → verify
     // Con MockMvc estamos haciendo: perform → andExpect → andExpect
-    @Test
-    void shouldReturnHello() throws Exception {
-
-        // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/hello"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string("Climbing Management API"));
-
-    }
-
-    @Test
+        @Test
     void shouldFindAllCourses() throws Exception {
 
         // 1. Given / Stubbing
@@ -57,16 +48,16 @@ public class CourseRecordEntityControllerTest {
                 new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
 
         // 2. When
-        Mockito.when(courseService.findAll()).thenReturn(courses);
+        Mockito.when(courseServiceDto.findAll()).thenReturn(courses);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/courses"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/dto/courses"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(3)))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].name", Matchers.equalTo("Sport Climbing")));
 
         // 4. Verify
-        Mockito.verify(courseService, Mockito.times(1)).findAll();
+        Mockito.verify(courseServiceDto, Mockito.times(1)).findAll();
     }
 
     @Test
@@ -81,34 +72,35 @@ public class CourseRecordEntityControllerTest {
         CourseRecord expectedCourse = new CourseRecord(2L, "Multi Pitch", 130.0, Difficulty.MEDIUM);
 
         // 2. When
-        Mockito.when(courseService.findById(2L)).thenReturn(expectedCourse);
+        Mockito.when(courseServiceDto.findById(2L)).thenReturn(expectedCourse);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/courses/2"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/dto/courses/2"))
                 // .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id", Matchers.equalTo(2)))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name", Matchers.equalTo("Multi Pitch"))).andExpect(MockMvcResultMatchers.jsonPath("$.difficulty", Matchers.equalTo(Difficulty.MEDIUM.name())));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name", Matchers.equalTo("Multi Pitch")))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.difficulty", Matchers.equalTo(Difficulty.MEDIUM.name())));
 
         // 4. Verify
-        Mockito.verify(courseService, Mockito.times(1)).findById(2L);
+        Mockito.verify(courseServiceDto, Mockito.times(1)).findById(2L);
     }
 
     @Test
     void shouldReturn404WhenCourseDoesNotExist() throws Exception {
 
         // 2. When
-        Mockito.when(courseService.findById(99L)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        Mockito.when(courseServiceDto.findById(99L)).thenThrow(new CourseNotFoundException(ExceptionMsg.COURSE_NOT_FOUND));
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/courses/99"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/dto/courses/99"))
                 //.andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status", Matchers.equalTo(HttpStatus.NOT_FOUND.value())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo("Course not found")));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo(ExceptionMsg.COURSE_NOT_FOUND)));
 
         // 4. Verify
-        Mockito.verify(courseService, Mockito.times(1)).findById(99L);
+        Mockito.verify(courseServiceDto, Mockito.times(1)).findById(99L);
     }
 
     @Test
@@ -116,10 +108,10 @@ public class CourseRecordEntityControllerTest {
         CourseRecord course = new CourseRecord(null, "Trad Climbing", 150.0, Difficulty.HARD);
         CourseRecord savedCourse = new CourseRecord(4L, "Trad Climbing", 150.0, Difficulty.HARD);
         // 2. When
-        Mockito.when(courseService.create(course)).thenReturn(savedCourse);
+        Mockito.when(courseServiceDto.create(course)).thenReturn(savedCourse);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.post("/courses")
+        mockMvc.perform(MockMvcRequestBuilders.post("/dto/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(course)))
                 // .andDo(MockMvcResultHandlers.print())
@@ -130,7 +122,7 @@ public class CourseRecordEntityControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.difficulty", Matchers.equalTo("HARD")));
 
         // 4. Verify
-        Mockito.verify(courseService).create(course);
+        Mockito.verify(courseServiceDto).create(course);
     }
 
     @Test
@@ -144,16 +136,16 @@ public class CourseRecordEntityControllerTest {
                 """;
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.post("/courses")
+        mockMvc.perform(MockMvcRequestBuilders.post("/dto/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidCourse))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 // .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status", Matchers.equalTo(HttpStatus.BAD_REQUEST.value())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo("Validation failed")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.price", Matchers.equalTo("must be greater than 0")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.name", Matchers.equalTo("must not be blank")))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.difficulty", Matchers.equalTo("must not be null")))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo(ExceptionMsg.VALIDATION_FAILED)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.price", Matchers.equalTo(ExceptionMsg.MUST_BE_GREATER_0)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.name", Matchers.equalTo(ExceptionMsg.MUST_NOT_BE_BLANK)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.difficulty", Matchers.equalTo(ExceptionMsg.MUST_NOT_BE_NULL)))
         ;
 
         // 4. Verify
@@ -167,10 +159,10 @@ public class CourseRecordEntityControllerTest {
         CourseRecord modifiedCourse = new CourseRecord(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
         CourseRecord updatedCourse = new CourseRecord(2L, "Multi Pitch Upd", 135.0, Difficulty.HARD);
         // 2. When
-        Mockito.when(courseService.update(2L, modifiedCourse)).thenReturn(updatedCourse);
+        Mockito.when(courseServiceDto.update(2L, modifiedCourse)).thenReturn(updatedCourse);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.put("/courses/2")
+        mockMvc.perform(MockMvcRequestBuilders.put("/dto/courses/2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(modifiedCourse)))
                 //.andDo(MockMvcResultHandlers.print())
@@ -183,7 +175,7 @@ public class CourseRecordEntityControllerTest {
         ;
 
         // 4. Verify
-        Mockito.verify(courseService).update(2L, modifiedCourse);
+        Mockito.verify(courseServiceDto).update(2L, modifiedCourse);
     }
 
     @Test
@@ -191,50 +183,50 @@ public class CourseRecordEntityControllerTest {
         CourseRecord modifiedCourse = new CourseRecord(null, "Multi Pitch Upd", 135.0, Difficulty.HARD);
 
         // 2. When
-        Mockito.when(courseService.update(99L, modifiedCourse)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        Mockito.when(courseServiceDto.update(99L, modifiedCourse)).thenThrow(new CourseNotFoundException(ExceptionMsg.COURSE_NOT_FOUND));
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.put("/courses/99")
+        mockMvc.perform(MockMvcRequestBuilders.put("/dto/courses/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(modifiedCourse)))
                 //.andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status", Matchers.equalTo(HttpStatus.NOT_FOUND.value())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo("Course not found")));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo(ExceptionMsg.COURSE_NOT_FOUND)));
         ;
 
         // 4. Verify
-        Mockito.verify(courseService).update(99L, modifiedCourse);
+        Mockito.verify(courseServiceDto).update(99L, modifiedCourse);
     }
 
     @Test
     void shouldDeleteCourse() throws Exception {
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.delete("/courses/2"))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/dto/courses/2"))
                 //  .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNoContent())
         ;
 
         // 4. Verify
-        Mockito.verify(courseService).delete(2L);
+        Mockito.verify(courseServiceDto).delete(2L);
     }
 
     @Test
     void shouldReturn404WhenDeletingNonExistingCourse() throws Exception {
 
         // 2. When
-        Mockito.when(courseService.delete(99L)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        Mockito.when(courseServiceDto.delete(99L)).thenThrow(new CourseNotFoundException(ExceptionMsg.COURSE_NOT_FOUND));
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.delete("/courses/99"))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/dto/courses/99"))
                 //.andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status", Matchers.equalTo(HttpStatus.NOT_FOUND.value())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo("Course not found")));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", Matchers.equalTo(ExceptionMsg.COURSE_NOT_FOUND)));
         ;
 
         // 4. Verify
-        Mockito.verify(courseService).delete(99L);
+        Mockito.verify(courseServiceDto).delete(99L);
     }
 
     @Test
@@ -243,10 +235,10 @@ public class CourseRecordEntityControllerTest {
         CourseRecord mostExpensive = new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD);
 
         // 2. When
-        Mockito.when(courseService.findMostExpensive()).thenReturn(mostExpensive);
+        Mockito.when(courseServiceDto.findMostExpensive()).thenReturn(mostExpensive);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/courses/most-expensive"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/dto/courses/most-expensive"))
                // .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id", Matchers.equalTo(3)))
@@ -256,7 +248,7 @@ public class CourseRecordEntityControllerTest {
                  ;
 
         // 4. Verify
-        Mockito.verify(courseService).findMostExpensive();
+        Mockito.verify(courseServiceDto).findMostExpensive();
     }
 
     @Test
@@ -267,10 +259,10 @@ public class CourseRecordEntityControllerTest {
 
 
         // 2. When
-        Mockito.when(courseService.findByDifficulty(Difficulty.MEDIUM)).thenReturn(expectedCourses);
+        Mockito.when(courseServiceDto.findByDifficulty(Difficulty.MEDIUM)).thenReturn(expectedCourses);
 
         // 3. Perform
-        mockMvc.perform(MockMvcRequestBuilders.get("/courses/difficulty/MEDIUM"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/dto/courses/difficulty/MEDIUM"))
                 // .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].id", Matchers.equalTo(2)))
@@ -280,7 +272,7 @@ public class CourseRecordEntityControllerTest {
         ;
 
         // 4. Verify
-        Mockito.verify(courseService).findByDifficulty(Difficulty.MEDIUM);
+        Mockito.verify(courseServiceDto).findByDifficulty(Difficulty.MEDIUM);
     }
 
 }

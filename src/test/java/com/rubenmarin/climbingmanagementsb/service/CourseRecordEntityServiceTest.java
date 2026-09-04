@@ -2,6 +2,8 @@
 package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
+import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
+import com.rubenmarin.climbingmanagementsb.exception.ExceptionMsg;
 import com.rubenmarin.climbingmanagementsb.record.CourseRecord;
 import com.rubenmarin.climbingmanagementsb.repository.CourseRepositoryDto;
 import org.junit.jupiter.api.Assertions;
@@ -11,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,26 +21,26 @@ import java.util.Optional;
 public class CourseRecordEntityServiceTest {
     //1. Mock
     @Mock
-    CourseRepositoryDto courseRepository;
+    CourseRepositoryDto courseRepositoryDto;
     @InjectMocks
-    CourseServiceDto courseService;
+    CourseServiceDto courseServiceDto;
 
     @Test
     void shouldFindCourseById() {
         CourseRecord course = new CourseRecord(1L, "Sport Climbing", 120.0, Difficulty.EASY);
         //2. Stubbing
-        Mockito.when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        Mockito.when(courseRepositoryDto.findById(1L)).thenReturn(Optional.of(course));
         //3. Assertion
-        Assertions.assertEquals(course, courseService.findById(1L));
+        Assertions.assertEquals(course, courseServiceDto.findById(1L));
     }
 
     @Test
     void shouldReturnNullWhenCourseDoesNotExist() {
         //2. Stubbing
-        Mockito.when(courseRepository.findById(99L)).thenReturn(Optional.empty());
+        Mockito.when(courseRepositoryDto.findById(99L)).thenReturn(Optional.empty());
         //3. Assertions
-        ResponseStatusException ex = Assertions.assertThrows(ResponseStatusException.class, () -> courseService.findById(99L));
-        Assertions.assertEquals("Course not found", ex.getReason());
+        CourseNotFoundException ex = Assertions.assertThrows(CourseNotFoundException.class, () -> courseServiceDto.findById(99L));
+        Assertions.assertEquals(ExceptionMsg.COURSE_NOT_FOUND, ex.getMessage());
     }
 
     @Test
@@ -48,13 +49,13 @@ public class CourseRecordEntityServiceTest {
         CourseRecord savedCourse = new CourseRecord(4L, "Trad Climbing", 150.0, Difficulty.MEDIUM);
 
         //2. Stubbing
-        Mockito.when(courseRepository.save(course)).thenReturn(savedCourse);
+        Mockito.when(courseRepositoryDto.save(course)).thenReturn(savedCourse);
 
         //3. Assertions
-        Assertions.assertEquals(savedCourse, courseService.create(course));
+        Assertions.assertEquals(savedCourse, courseServiceDto.create(course));
 
         //4. Verifications
-        Mockito.verify(courseRepository).save(course);
+        Mockito.verify(courseRepositoryDto).save(course);
     }
 
     @Test
@@ -63,13 +64,13 @@ public class CourseRecordEntityServiceTest {
         CourseRecord updatedCourse = new CourseRecord(2L, "Multi Pitch Updated", 160.0, Difficulty.HARD);
 
         //2. Stubbing
-        Mockito.when(courseRepository.update(2L, course)).thenReturn(Optional.of(updatedCourse));
+        Mockito.when(courseRepositoryDto.update(2L, course)).thenReturn(Optional.of(updatedCourse));
 
         //3. Assertions
-        Assertions.assertEquals(updatedCourse, courseService.update(2L, course));
+        Assertions.assertEquals(updatedCourse, courseServiceDto.update(2L, course));
 
         //4. Verifications
-        Mockito.verify(courseRepository).update(2L, course);
+        Mockito.verify(courseRepositoryDto).update(2L, course);
     }
 
     @Test
@@ -77,14 +78,14 @@ public class CourseRecordEntityServiceTest {
         CourseRecord course = new CourseRecord(null, "Sport Climbing", 120.0, Difficulty.EASY);
 
         //2. Stubbing
-        Mockito.when(courseRepository.update(99L, course)).thenReturn(Optional.empty());
+        Mockito.when(courseRepositoryDto.update(99L, course)).thenReturn(Optional.empty());
 
         //3. Assertion
-        ResponseStatusException ex = Assertions.assertThrows(ResponseStatusException.class, () -> courseService.update(99L, course));
-        Assertions.assertEquals("Course not found", ex.getReason());
+        CourseNotFoundException ex = Assertions.assertThrows(CourseNotFoundException.class, () -> courseServiceDto.update(99L, course));
+        Assertions.assertEquals(ExceptionMsg.COURSE_NOT_FOUND, ex.getMessage());
 
         //4. Verifications
-        Mockito.verify(courseRepository).update(99L, course);
+        Mockito.verify(courseRepositoryDto).update(99L, course);
     }
 
     @Test
@@ -92,13 +93,13 @@ public class CourseRecordEntityServiceTest {
         CourseRecord course = new CourseRecord(2L, "Sport Climbing", 120.0, Difficulty.EASY);
 
         //2. Stubbing
-        Mockito.when(courseRepository.delete(2L)).thenReturn(Optional.of(course));
+        Mockito.when(courseRepositoryDto.delete(2L)).thenReturn(Optional.of(course));
 
         //3. Assertions
-        Assertions.assertEquals(course, courseService.delete(2L));
+        Assertions.assertEquals(course, courseServiceDto.delete(2L));
 
         //4. Verifications
-        Mockito.verify(courseRepository).delete(2L);
+        Mockito.verify(courseRepositoryDto).delete(2L);
 
     }
 
@@ -107,14 +108,14 @@ public class CourseRecordEntityServiceTest {
         CourseRecord course = new CourseRecord(2L, "Sport Climbing", 120.0, Difficulty.EASY);
 
         //2. Stubbing
-        Mockito.when(courseRepository.delete(99L)).thenReturn(Optional.empty());
+        Mockito.when(courseRepositoryDto.delete(99L)).thenReturn(Optional.empty());
 
         //3. Assertions
-        ResponseStatusException ex = Assertions.assertThrows(ResponseStatusException.class, () -> courseService.delete(99L));
-        Assertions.assertEquals("Course not found", ex.getReason());
+        CourseNotFoundException ex = Assertions.assertThrows(CourseNotFoundException.class, () -> courseServiceDto.delete(99L));
+        Assertions.assertEquals(ExceptionMsg.COURSE_NOT_FOUND, ex.getMessage());
 
         //4. Verifications
-        Mockito.verify(courseRepository).delete(99L);
+        Mockito.verify(courseRepositoryDto).delete(99L);
 
     }
 
@@ -126,13 +127,13 @@ public class CourseRecordEntityServiceTest {
                 new CourseRecord(3L, "Alpine Climbing", 140.0, Difficulty.HARD));
 
         //2. Stubbing
-        Mockito.when(courseRepository.findAll()).thenReturn(courses);
+        Mockito.when(courseRepositoryDto.findAll()).thenReturn(courses);
 
         //3. Assertions
-        Assertions.assertEquals(courses, courseRepository.findAll());
+        Assertions.assertEquals(courses, courseRepositoryDto.findAll());
 
         //4. Verifications
-        Mockito.verify(courseRepository).findAll();
+        Mockito.verify(courseRepositoryDto).findAll();
     }
 
     @Test
@@ -147,26 +148,26 @@ public class CourseRecordEntityServiceTest {
         //2. Stubbing
         //La clase que estamos testeando no se mockea. !!!
         // Mockito.when(courseService.findMostExpensive()).thenReturn(mostExpensive);
-        Mockito.when(courseRepository.findAll()).thenReturn(courses);
+        Mockito.when(courseRepositoryDto.findAll()).thenReturn(courses);
 
         //3. Assertions
-        Assertions.assertEquals(mostExpensive, courseService.findMostExpensive());
+        Assertions.assertEquals(mostExpensive, courseServiceDto.findMostExpensive());
 
         //4. Verifications
-        Mockito.verify(courseRepository).findAll();
+        Mockito.verify(courseRepositoryDto).findAll();
     }
 
     @Test
     void findMostExpensiveShouldThrowNotFoundWhenThereAreNoCourses() {
         //2. Stubbing
-        Mockito.when(courseRepository.findAll()).thenReturn(List.of());
+        Mockito.when(courseRepositoryDto.findAll()).thenReturn(List.of());
 
         //3. Assertions
-        ResponseStatusException ex = Assertions.assertThrows(ResponseStatusException.class, () -> courseService.findMostExpensive());
-        Assertions.assertEquals("Course not found", ex.getReason());
+        CourseNotFoundException ex = Assertions.assertThrows(CourseNotFoundException.class, () -> courseServiceDto.findMostExpensive());
+        Assertions.assertEquals(ExceptionMsg.COURSE_NOT_FOUND, ex.getMessage());
 
         //4. Verifications
-        Mockito.verify(courseRepository).findAll();
+        Mockito.verify(courseRepositoryDto).findAll();
     }
 
     @Test
@@ -180,15 +181,15 @@ public class CourseRecordEntityServiceTest {
         CourseRecord expectedCourse = new CourseRecord(1L, "Sport Climbing", 120.0, Difficulty.EASY);
 
         //2. Stubbing
-        Mockito.when(courseRepository.findAll()).thenReturn(courses);
+        Mockito.when(courseRepositoryDto.findAll()).thenReturn(courses);
 
         //3. Assertions
-        List<CourseRecord> result = courseService.findByDifficulty(Difficulty.EASY);
+        List<CourseRecord> result = courseServiceDto.findByDifficulty(Difficulty.EASY);
         Assertions.assertEquals(1, result.size());
         Assertions.assertEquals(expectedCourse, result.getFirst());
 
         //4. Verifications
-        Mockito.verify(courseRepository).findAll();
+        Mockito.verify(courseRepositoryDto).findAll();
     }
 }
 
