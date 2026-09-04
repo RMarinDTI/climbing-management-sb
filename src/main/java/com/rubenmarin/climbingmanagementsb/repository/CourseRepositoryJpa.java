@@ -7,16 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 import java.util.Optional;
-
 
 /*
  * Spring Data JPA Repository
  *
- * By extending JpaRepository<CourseEntity, Long>, Spring Data automatically
- * provides common CRUD operations such as:
+ * By extending JpaRepository<CourseEntity, Long>, Spring Data automatically provides common CRUD operations such as:
  *
  * findAll(), findById(), save(), deleteById(), existsById(), count(), etc.
  *
@@ -69,8 +66,7 @@ public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
     /*
      * DERIVED QUERY
      *
-     * Spring Data can combine multiple conditions directly
-     * from the method name.
+     * Spring Data can combine multiple conditions directly from the method name.
      *
      * Difficulty + And + Price + LessThan
      *
@@ -84,10 +80,7 @@ public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
      * This method is kept as an example of a more complex
      * Derived Query.
      */
-    List<CourseEntity> findByDifficultyAndPriceLessThan(
-            Difficulty difficulty,
-            Double price
-    );
+    List<CourseEntity> findByDifficultyAndPriceLessThan(         Difficulty difficulty,            Double price    );
 
 
     /*
@@ -95,8 +88,7 @@ public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
      *
      * @Query allows us to explicitly define the query.
      *
-     * JPQL works with ENTITY classes and their Java properties,
-     * NOT directly with database table/column names.
+     * JPQL works with ENTITY classes and their Java properties,NOT directly with database table/column names.
      *
      * CourseEntity → entity
      * c.difficulty → Java entity property
@@ -119,15 +111,11 @@ public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
     /*
      * PESSIMISTIC LOCKING
      *
-     * PESSIMISTIC_WRITE requests a database-level lock on the
-     * selected entity.
-     *
-     * Another transaction attempting a conflicting operation
-     * on the same row must wait until the current transaction
-     * completes.
-     *
+     * PESSIMISTIC_WRITE requests a database-level lock on the selected entity.
+
+     * Another transaction attempting a conflicting operation on the same row must wait until the current transaction completes.
      * The lock is held for the duration of the transaction.
-     *
+
      * Hibernate/PostgreSQL generated SQL during our test:
      *
      * SELECT ...
@@ -138,8 +126,7 @@ public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
      * The exact SQL depends on the database and Hibernate dialect.
      *
      * Important:
-     * The lock is held by the DATABASE TRANSACTION, not by Java
-     * or by the repository method itself.
+     * The lock is held by the DATABASE TRANSACTION, not by Java or by the repository method itself.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM CourseEntity c WHERE c.id = :id")

@@ -1,42 +1,111 @@
 package com.rubenmarin.climbingmanagementsb.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.DateTimeException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /*
+     * GLOBAL EXCEPTION HANDLER
+     *
+     * @RestControllerAdvice allows us to handle exceptions thrown
+     * by any controller in one centralized place.
+     *
+     * This keeps exception-handling logic out of our controllers.
+     */
+
+
+    /*
+     * VALIDATION EXCEPTIONS
+     *
+     * This exception is thrown when @Valid fails on a @RequestBody.
+     *
+     * Example: POST /jpa/courses with invalid data.
+     *
+     * Instead of returning Spring's default error response, we create our own consistent API response.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ValidationErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
 
-        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
-        Map<String, String> errorsMap = fieldErrors.stream().collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+        Map<String, String> errors = new LinkedHashMap<>();
 
-        fieldErrors.forEach(fieldError -> System.out.println("CUIDAAAAO!: " + fieldError.getField() + ": " + fieldError.getDefaultMessage()));
+        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+            errors.put(
+                    fieldError.getField(),
+                    fieldError.getDefaultMessage()
+            );
+        }
 
-        ValidationErrorResponse response = new ValidationErrorResponse(new Date().toString(), HttpStatus.BAD_REQUEST.value(), "Validation failed", errorsMap);
+        ValidationErrorResponse response = new ValidationErrorResponse(
+                Instant.now().toString(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Validation failed",
+                errors
+        );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<?> handleStatusException(ResponseStatusException ex) {
 
-        ErrorResponse response = new ErrorResponse(new Date().toString(), ex.getStatusCode().value(), ex.getReason());
+    /*
+     * COURSE NOT FOUND
+     *
+     * Handles CourseNotFoundException thrown by the service layer.
+     *
+     * The service is responsible for detecting the business condition (the course does not exist),
+     * while the exception handler is responsible for translating it into the appropriate HTTP response.
+     *
+     * In this case:
+     *
+     * CourseNotFoundException → HTTP 404 NOT_FOUND
+     */
+    @ExceptionHandler(CourseNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCourseNotFoundException(CourseNotFoundException ex) {
 
-        return ResponseEntity.status(ex.getStatusCode()).body(response);
+        ErrorResponse response = new ErrorResponse(
+                Instant.now().toString(),
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+
+    /*
+     * UNEXPECTED EXCEPTIONS
+     *
+     * This is the fallback handler for unexpected exceptions that are not handled by a more specific @ExceptionHandler.
+     * We return a generic 500 INTERNAL_SERVER_ERROR response instead of exposing internal implementation details to the client.
+     * The real exception should be logged internally for debugging, but sensitive technical details should not be returned in the API.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
+        log.error("Unexpected error", ex);
+        ErrorResponse response = new ErrorResponse(
+                Instant.now().toString(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                ExceptionMsg.UNEXPECTED_ERROR
+        );
+
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(response);
+    }
 }
+

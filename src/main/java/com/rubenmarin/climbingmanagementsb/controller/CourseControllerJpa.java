@@ -41,9 +41,7 @@ public class CourseControllerJpa {
      */
     @GetMapping("/most-expensive")
     public ResponseEntity<CourseRecord> findMostExpensiveCourse() {
-
         CourseRecord mostExpensive = courseServiceJpa.findMostExpensive();
-
         return ResponseEntity.ok(mostExpensive);
     }
 
@@ -54,8 +52,7 @@ public class CourseControllerJpa {
      * Returns all courses matching the specified difficulty.
      */
     @GetMapping("/difficulty/{difficulty}")
-    public List<CourseRecord> findByDifficulty(
-            @PathVariable Difficulty difficulty) {
+    public List<CourseRecord> findByDifficulty(@PathVariable Difficulty difficulty) {
 
         return courseServiceJpa.findByDifficulty(difficulty);
     }
@@ -64,18 +61,11 @@ public class CourseControllerJpa {
     /*
      * GET /jpa/courses/difficulty/{difficulty}/price/{price}
      *
-     * Returns courses with the specified difficulty and
-     * a price lower than the given value.
+     * Returns courses with the specified difficulty and a price lower than the given value.
      */
     @GetMapping("/difficulty/{difficulty}/price/{price}")
-    public List<CourseRecord> findByDifficultyAndPriceLessThan(
-            @PathVariable Difficulty difficulty,
-            @PathVariable Double price) {
-
-        return courseServiceJpa.findByDifficultyAndPriceLessThan(
-                difficulty,
-                price
-        );
+    public List<CourseRecord> findByDifficultyAndPriceLessThan(@PathVariable Difficulty difficulty, @PathVariable Double price) {
+        return courseServiceJpa.findByDifficultyAndPriceLessThan(difficulty, price);
     }
 
 
@@ -98,14 +88,9 @@ public class CourseControllerJpa {
      * HTTP 201 CREATED is returned when the course is successfully created.
      */
     @PostMapping
-    public ResponseEntity<CourseRecord> createCourse(
-            @Valid @RequestBody CourseRecord courseRecord) {
-
+    public ResponseEntity<CourseRecord> createCourse(@Valid @RequestBody CourseRecord courseRecord) {
         CourseRecord created = courseServiceJpa.create(courseRecord);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
 
@@ -114,16 +99,11 @@ public class CourseControllerJpa {
      *
      * Updates an existing course.
      *
-     * The transaction itself is handled by the service layer,
-     * not by the controller.
+     * The transaction itself is handled by the service layer,not by the controller.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<CourseRecord> updateCourse(
-            @PathVariable Long id,
-            @Valid @RequestBody CourseRecord courseRecord) {
-
+    public ResponseEntity<CourseRecord> updateCourse(@PathVariable Long id, @Valid @RequestBody CourseRecord courseRecord) {
         CourseRecord updated = courseServiceJpa.update(id, courseRecord);
-
         return ResponseEntity.ok(updated);
     }
 
@@ -133,14 +113,11 @@ public class CourseControllerJpa {
      *
      * Deletes an existing course.
      *
-     * HTTP 204 NO CONTENT indicates successful deletion
-     * without returning a response body.
+     * HTTP 204 NO CONTENT indicates successful deletion without returning a response body.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
-
         courseServiceJpa.delete(id);
-
         return ResponseEntity.noContent().build();
     }
 
@@ -154,12 +131,9 @@ public class CourseControllerJpa {
      * The RuntimeException causes the transaction to roll back.
      */
     @GetMapping("/test-required/{id1}/{id2}")
-    public ResponseEntity<Void> testRequired(
-            @PathVariable Long id1,
-            @PathVariable Long id2) {
+    public ResponseEntity<Void> testRequired(@PathVariable Long id1, @PathVariable Long id2) {
 
         courseServiceJpa.testRequired(id1, id2);
-
         return ResponseEntity.ok().build();
     }
 
@@ -170,14 +144,11 @@ public class CourseControllerJpa {
      * Demonstrates REQUIRED vs REQUIRES_NEW.
      *
      * operationA() starts the outer transaction.
-     * operationB() uses REQUIRES_NEW and therefore runs
-     * in an independent transaction.
+     * operationB() uses REQUIRES_NEW and therefore runs in an independent transaction.
      */
     @GetMapping("/test-requires-new/{id}")
     public ResponseEntity<Void> testRequiresNew(@PathVariable Long id) {
-
         courseServiceJpa.operationA(id);
-
         return ResponseEntity.ok().build();
     }
 
@@ -191,11 +162,9 @@ public class CourseControllerJpa {
      * In this test, rollbackFor explicitly enables rollback.
      */
     @GetMapping("/test-checked/{id}")
-    public ResponseEntity<Void> testChecked(
-            @PathVariable Long id) throws Exception {
-
+    public ResponseEntity<Void> testChecked(@PathVariable Long id) throws Exception {
         courseServiceJpa.testCheckedException(id);
-
         return ResponseEntity.ok().build();
     }
-}
+
+ }

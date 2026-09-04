@@ -2,12 +2,12 @@ package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.entity.CourseEntity;
+import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
+import com.rubenmarin.climbingmanagementsb.exception.ExceptionMsg;
 import com.rubenmarin.climbingmanagementsb.record.CourseRecord;
 import com.rubenmarin.climbingmanagementsb.repository.CourseRepositoryJpa;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -17,14 +17,10 @@ public class CourseServiceJpa {
     private final CourseRepositoryJpa courseRepositoryJpa;
     private final TransactionTestService transactionTestService;
 
-    public CourseServiceJpa(
-            CourseRepositoryJpa courseRepositoryJpa,
-            TransactionTestService transactionTestService) {
-
+    public CourseServiceJpa(CourseRepositoryJpa courseRepositoryJpa, TransactionTestService transactionTestService) {
         this.courseRepositoryJpa = courseRepositoryJpa;
         this.transactionTestService = transactionTestService;
     }
-
 
     /*
      * Entity → Record
@@ -45,8 +41,7 @@ public class CourseServiceJpa {
     /*
      * Record → Entity
      *
-     * Used when receiving data from the API and creating
-     * a new persistent entity.
+     * Used when receiving data from the API and creating a new persistent entity.
      */
     private CourseEntity toEntity(CourseRecord record) {
         return new CourseEntity(
@@ -56,61 +51,44 @@ public class CourseServiceJpa {
         );
     }
 
-
     public List<CourseRecord> findAll() {
-
         return courseRepositoryJpa.findAll()
                 .stream()
                 .map(this::toRecord)
                 .toList();
     }
 
-
     public CourseRecord findById(Long id) {
-
         return courseRepositoryJpa.findById(id)
                 .map(this::toRecord)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_NOT_FOUND
                         )
                 );
     }
 
-
     public CourseRecord create(CourseRecord courseRecord) {
-
         CourseEntity entity = toEntity(courseRecord);
-
         CourseEntity saved = courseRepositoryJpa.save(entity);
-
         return toRecord(saved);
     }
-
 
     /*
      * @Transactional starts a database transaction.
      *
-     * The entity returned by findById() is managed by Hibernate
-     * inside the Persistence Context.
-     *
-     * When we modify the entity, Hibernate detects the changes
-     * automatically through Dirty Checking.
-     *
+     * The entity returned by findById() is managed by Hibernate inside the Persistence Context.
+     * When we modify the entity, Hibernate detects the changes automatically through Dirty Checking.
      * At transaction commit, Hibernate generates the UPDATE SQL.
-     *
-     * Therefore, calling repository.save(existing) is not necessary
-     * for an already managed entity.
+     * Therefore, calling repository.save(existing) is not necessary for an already managed entity.
      */
     @Transactional
     public CourseRecord update(Long id, CourseRecord courseRecord) {
 
         CourseEntity existing = courseRepositoryJpa.findById(id)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_NOT_FOUND
                         )
                 );
 
@@ -123,26 +101,20 @@ public class CourseServiceJpa {
 
 
     public CourseRecord delete(Long id) {
-
         CourseEntity existing = courseRepositoryJpa.findById(id)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_NOT_FOUND
                         )
                 );
 
         courseRepositoryJpa.delete(existing);
-
         return toRecord(existing);
     }
 
 
     /*
-     * The repository method uses a Derived Query:
-     *
-     * findTopByOrderByPriceDesc()
-     *
+     * The repository method uses a Derived Query: findTopByOrderByPriceDesc()
      * Spring Data JPA derives the query from the method name.
      *
      * Conceptually:
@@ -153,13 +125,11 @@ public class CourseServiceJpa {
      * LIMIT 1
      */
     public CourseRecord findMostExpensive() {
-
         CourseEntity mostExpensive = courseRepositoryJpa
                 .findTopByOrderByPriceDesc()
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_NOT_FOUND
                         )
                 );
 
@@ -169,7 +139,6 @@ public class CourseServiceJpa {
 
     /*
      * Derived Query:
-     *
      * Spring Data JPA derives the SQL from the method name.
      */
     public List<CourseRecord> findByDifficulty(Difficulty difficulty) {
@@ -187,10 +156,7 @@ public class CourseServiceJpa {
      * JPQL works with entities and their Java properties,
      * rather than directly with database tables and columns.
      */
-    public List<CourseRecord> findByDifficultyAndPriceLessThan(
-            Difficulty difficulty,
-            Double price) {
-
+    public List<CourseRecord> findByDifficultyAndPriceLessThan(Difficulty difficulty, Double price) {
         return courseRepositoryJpa
                 .searchCourses(difficulty, price)
                 .stream()
@@ -203,29 +169,23 @@ public class CourseServiceJpa {
      * TRANSACTIONAL ROLLBACK TEST
      *
      * @Transactional means both updates belong to the same transaction.
-     *
-     * If the RuntimeException is thrown, the transaction is rolled back
-     * and neither change is persisted.
-     *
-     * By default, Spring rolls back transactions for unchecked exceptions
-     * such as RuntimeException.
+     * If the RuntimeException is thrown, the transaction is rolled back and neither change is persisted.
+     * By default, Spring rolls back transactions for unchecked exceptions such as RuntimeException.
      */
     @Transactional
     public void testRequired(Long id1, Long id2) {
 
         CourseEntity course1 = courseRepositoryJpa.findById(id1)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course 1 not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_1_NOT_FOUND
                         )
                 );
 
         CourseEntity course2 = courseRepositoryJpa.findById(id2)
                 .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course 2 not found"
+                        new CourseNotFoundException(
+                                ExceptionMsg.COURSE_2_NOT_FOUND
                         )
                 );
 
@@ -235,28 +195,21 @@ public class CourseServiceJpa {
         throw new RuntimeException("Testing REQUIRED rollback");
     }
 
-
     /*
      * TRANSACTION PROPAGATION TEST
      *
      * operationA() starts a transaction.
      *
-     * transactionTestService.operationB() is called from inside
-     * that transaction. The behavior depends on the propagation
-     * configured in operationB().
+     * transactionTestService.operationB() is called from inside that transaction.
+     * The behavior depends on the propagation configured in operationB().
      *
      * This is used to study REQUIRED vs REQUIRES_NEW.
      */
     @Transactional
     public void operationA(Long id) {
-
-        CourseEntity course = courseRepositoryJpa.findById(id)
-                .orElseThrow();
-
+        CourseEntity course = courseRepositoryJpa.findById(id).orElseThrow(() -> new CourseNotFoundException(ExceptionMsg.COURSE_NOT_FOUND));
         course.setName("CAMBIO DE A");
-
         transactionTestService.operationB(id);
-
         throw new RuntimeException("Rollback of A");
     }
 
@@ -264,14 +217,12 @@ public class CourseServiceJpa {
     /*
      * CHECKED EXCEPTION TEST
      *
-     * Spring's default rollback rules apply to unchecked exceptions
-     * (RuntimeException and Error), but NOT normally to checked
-     * exceptions.
+     * Spring's default rollback rules apply to unchecked exceptions (RuntimeException and Error),
+     * but NOT normally to checked exceptions.
      *
      * This method is used to demonstrate that difference.
      */
     public void testCheckedException(Long id) throws Exception {
-
         transactionTestService.testCheckedException(id);
     }
 
@@ -281,27 +232,20 @@ public class CourseServiceJpa {
      *
      * PESSIMISTIC_WRITE requests a database-level lock on the selected row.
      *
-     * Another transaction attempting a conflicting lock on the same row
-     * must wait until the current transaction completes.
+     * Another transaction attempting a conflicting lock on the same row must wait until the current transaction completes.
      *
      * The lock is held for the duration of the transaction.
      *
-     * Conceptually, PostgreSQL generates something similar to:
+     * The exact SQL depends on the database and Hibernate dialect.
+     * With PostgreSQL, our test generated:
      *
      * SELECT ...
      * FROM courses
      * WHERE id = ?
-     * FOR UPDATE;
+     * FOR NO KEY UPDATE;
      */
     @Transactional
     public CourseEntity findByIdWithLock(Long id) {
-
-        return courseRepositoryJpa.findByIdForUpdate(id)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "Course not found"
-                        )
-                );
+        return courseRepositoryJpa.findByIdForUpdate(id).orElseThrow(() -> new CourseNotFoundException(ExceptionMsg.COURSE_NOT_FOUND));
     }
 }
