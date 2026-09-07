@@ -16,6 +16,8 @@ public class CourseControllerJpa {
 
     private final CourseServiceJpa courseServiceJpa;
 
+
+
     public CourseControllerJpa(CourseServiceJpa courseServiceJpa) {
         this.courseServiceJpa = courseServiceJpa;
     }
@@ -167,4 +169,4 @@ public class CourseControllerJpa {
         return ResponseEntity.ok().build();
     }
 
- }
+}

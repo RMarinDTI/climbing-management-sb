@@ -10,15 +10,44 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-/*
- * Spring Data JPA Repository
- *
- * By extending JpaRepository<CourseEntity, Long>, Spring Data automatically provides common CRUD operations such as:
- *
- * findAll(), findById(), save(), deleteById(), existsById(), count(), etc.
- *
- * We only need to define methods for queries specific to our application.
- */
+// JpaRepository provides these CRUD methods out of the box:
+//
+// save(entity)              -> Create or update an entity
+// saveAll(entities)         -> Create or update multiple entities
+//
+// findById(id)              -> Find one entity by ID
+// findAll()                 -> Find all entities
+// findAllById(ids)          -> Find entities by multiple IDs
+//
+// deleteById(id)            -> Delete an entity by ID
+// delete(entity)            -> Delete a specific entity
+// deleteAll()               -> Delete all entities
+// deleteAllById(ids)        -> Delete multiple entities by ID
+//
+// existsById(id)            -> Check if an entity exists
+// count()                   -> Count entities
+//
+// flush()                   -> Flush changes to the database
+// saveAndFlush(entity)      -> Save entity and immediately flush
+// deleteAllInBatch()        -> Delete all entities in a batch
+// deleteAllByIdInBatch(ids) -> Delete entities by IDs in a batch
+// deleteInBatch(entities)   -> Delete entities in a batch
+//
+// Spring Data JPA provides the implementation automatically. No implementation is required.
+//
+// We can extend JpaRepository with:
+//
+// 1. Derived queries:
+//    findByName(...)
+//    findByDifficulty(...)
+//    findByDifficultyAndPriceLessThan(...)
+//
+// 2. JPQL / custom queries:
+//    @Query("SELECT c FROM Course c WHERE ...")
+//
+// 3. Native SQL queries:
+//    @Query(value = "SELECT * FROM courses WHERE ...",nativeQuery = true)
+
 public interface CourseRepositoryJpa extends JpaRepository<CourseEntity, Long> {
 
 
