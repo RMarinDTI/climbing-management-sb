@@ -2,9 +2,12 @@ package com.rubenmarin.climbingmanagementsb.repository;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
+import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -59,5 +62,53 @@ public class CourseMongoCustomRepositoryImpl implements CourseMongoCustomReposit
         List<CourseMongoDocument> courses = mongoTemplate.find(query, CourseMongoDocument.class);
 
         return PageableExecutionUtils.getPage(courses, pageable, () -> total);
+    }
+
+
+    /*
+     * Build an aggregation pipeline equivalent to:
+     *
+     * db.courses.aggregate([
+     *     { $match: { price: { $gte: 100 } } },
+     *     { $group: {
+     *           _id: "$difficulty",
+     *           averagePrice: { $avg: "$price" },
+     *           courseCount: { $sum: 1 }
+     *     }},
+     *     { $project: {
+     *           _id: 0,
+     *           difficulty: "$_id",
+     *           averagePrice: 1,
+     *           courseCount: 1
+     *     }},
+     *     { $sort: { averagePrice: -1 } }
+     * ])
+     */
+    @Override
+    public List<CourseDifficultyStatsDto> getDifficultyStats() {
+        Aggregation aggregation = Aggregation.newAggregation(
+
+                // 1. Filter documents before grouping.
+                Aggregation.match(Criteria.where("price").gte(100)),
+
+                // 2. Group courses by difficulty and calculate statistics.
+                Aggregation.group("difficulty")
+                        .avg("price").as("averagePrice")
+                        .count().as("courseCount"),
+
+                // 3. Reshape the aggregation result.
+                //    MongoDB stores the group key in "_id", so map it to "difficulty".
+                Aggregation.project()
+                        .and("_id").as("difficulty")
+                        .and("averagePrice").as("averagePrice")
+                        .and("courseCount").as("courseCount")
+                        .andExclude("_id"),
+
+                // 4. Sort results by average price, highest first.
+                Aggregation.sort(Sort.Direction.DESC, "averagePrice"));
+
+        // Execute the aggregation and map each result to our DTO.
+        // Aggregation = pipeline builder, MongoTemplate.aggregate() = executes the pipeline, DTO = receives the mapped results.
+        return mongoTemplate.aggregate(aggregation, CourseMongoDocument.class, CourseDifficultyStatsDto.class).getMappedResults();
     }
 }

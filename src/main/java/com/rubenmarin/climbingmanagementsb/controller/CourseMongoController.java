@@ -1,6 +1,7 @@
 package com.rubenmarin.climbingmanagementsb.controller;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
+import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
 import com.rubenmarin.climbingmanagementsb.service.CourseMongoService;
@@ -136,6 +137,19 @@ public class CourseMongoController {
             Pageable pageable
     ) {
         return courseMongoService.search(name, difficulty, minPrice, maxPrice, pageable);
+    }
+
+    /*
+     * MongoDB aggregation:
+     * - filters courses with price >= 100
+     * - groups them by difficulty
+     * - calculates average price and course count
+     * - sorts by average price descending
+     * GET http://localhost:8080/mongo/courses/difficulty-stats
+     */
+    @GetMapping("/difficulty-stats")
+    public List<CourseDifficultyStatsDto> getDifficultyStats() {
+        return courseMongoService.getDifficultyStats();
     }
 
 }

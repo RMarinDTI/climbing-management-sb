@@ -2,6 +2,7 @@ package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
+import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
 import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
@@ -113,4 +114,9 @@ public class CourseMongoService {
     public Page<CourseMongoResponseDto> search(String name, Difficulty difficulty, Double minPrice, Double maxPrice, Pageable pageable) {
         return courseMongoRepository.search(name, difficulty, minPrice, maxPrice, pageable).map(this::toDtoResponse);
     }
+
+    public List<CourseDifficultyStatsDto> getDifficultyStats() {
+        return courseMongoRepository.getDifficultyStats();
+    }
+
 }

@@ -66,4 +66,7 @@ public interface CourseMongoRepository extends MongoRepository<CourseMongoDocume
 
     // Paginated results
     Page<CourseMongoDocument> findByDifficultyAndPriceLessThanEqual(Difficulty difficulty, Double price, Pageable pageable);
+
+
+
 }
