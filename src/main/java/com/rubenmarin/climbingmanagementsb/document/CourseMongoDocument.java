@@ -2,8 +2,24 @@ package com.rubenmarin.climbingmanagementsb.document;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+
+/*
+ * COMPOUND INDEX
+ *
+ * Indexes both difficulty and price because our queries frequently filter by difficulty and then by price.
+ *
+ * Field order matters: difficulty is the leading field, followed by price.
+ *
+ * 1 → ascending order.
+ */
+@CompoundIndex(
+        name = "difficulty_price_idx",
+        def = "{'difficulty': 1, 'price': 1}"
+)
 
 @Document(collection = "courses")
 public class CourseMongoDocument {
@@ -15,6 +31,7 @@ public class CourseMongoDocument {
 
     private Double price;
 
+   // @Indexed
     private Difficulty difficulty;
 
     protected CourseMongoDocument() {
