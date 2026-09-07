@@ -108,4 +108,9 @@ public class CourseMongoService {
     public Page<CourseMongoResponseDto> findByDifficultyAndPriceLessThanEqual(Difficulty difficulty, Double price, Pageable pageable) {
         return courseMongoRepository.findByDifficultyAndPriceLessThanEqual(difficulty, price, pageable).map(this::toDtoResponse);
     }
+
+    // Use MongoTemplate for dynamic queries
+    public Page<CourseMongoResponseDto> search(String name, Difficulty difficulty, Double minPrice, Double maxPrice, Pageable pageable) {
+        return courseMongoRepository.search(name, difficulty, minPrice, maxPrice, pageable).map(this::toDtoResponse);
+    }
 }

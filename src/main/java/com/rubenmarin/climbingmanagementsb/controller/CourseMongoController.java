@@ -106,5 +106,36 @@ public class CourseMongoController {
         return courseMongoService.findByDifficultyAndPriceLessThanEqual(difficulty, maxPrice, pageable);
     }
 
+    /*
+     * DYNAMIC SEARCH WITH MONGOTEMPLATE
+     *
+     * All filters are optional.
+     *
+     * The service delegates the search to our custom repository, which uses MongoTemplate to build the MongoDB query dynamically.
+     *
+     * Available filters:
+     * - name
+     * - difficulty
+     * - minPrice
+     * - maxPrice
+     *
+     * Pageable also allows pagination and sorting.
+     *
+     * Examples:
+     * GET /mongo/courses/dynamic-search
+     * GET /mongo/courses/dynamic-search?difficulty=MEDIUM
+     * GET /mongo/courses/dynamic-search?minPrice=100&maxPrice=160
+     * GET /mongo/courses/dynamic-search?difficulty=MEDIUM&maxPrice=160&page=0&size=2&sort=price,asc
+     */
+    @GetMapping("/dynamic-search")
+    public Page<CourseMongoResponseDto> searchDynamic(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Difficulty difficulty,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            Pageable pageable
+    ) {
+        return courseMongoService.search(name, difficulty, minPrice, maxPrice, pageable);
+    }
 
 }

@@ -33,7 +33,7 @@ import java.util.List;
 // 2. Custom queries:
 //    @Query("{ ... }")
 
-public interface CourseMongoRepository extends MongoRepository<CourseMongoDocument, String> {
+public interface CourseMongoRepository extends MongoRepository<CourseMongoDocument, String>, CourseMongoCustomRepository {
 
     List<CourseMongoDocument> findByDifficulty(Difficulty difficulty);
 
@@ -64,6 +64,6 @@ public interface CourseMongoRepository extends MongoRepository<CourseMongoDocume
     //WHERE name LIKE '%ferrata%'
     List<CourseMongoDocument> findByNameContainingIgnoreCase(String name);
 
-
+    // Paginated results
     Page<CourseMongoDocument> findByDifficultyAndPriceLessThanEqual(Difficulty difficulty, Double price, Pageable pageable);
 }
