@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -26,6 +25,10 @@ public class GlobalExceptionHandler {
      * by any controller in one centralized place.
      *
      * This keeps exception-handling logic out of our controllers.
+     *
+     * CourseNotFoundException → 404
+     * MethodArgumentNotValidException → 400
+     * Exception → 500
      */
 
 
@@ -41,8 +44,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
 
+        // LinkedHashMap preserves the order in which validation errors are found.
         Map<String, String> errors = new LinkedHashMap<>();
 
+        // Extract every field that failed validation.
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errors.put(
                     fieldError.getField(),
@@ -50,13 +55,14 @@ public class GlobalExceptionHandler {
             );
         }
 
+        // Build our custom validation error response.
         ValidationErrorResponse response = new ValidationErrorResponse(
                 Instant.now().toString(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Validation failed",
+                ExceptionMsg.VALIDATION_FAILED,
                 errors
         );
-
+        // Return HTTP 400 BAD_REQUEST with the validation errors.
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
@@ -107,5 +113,6 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
     }
+
 }
 

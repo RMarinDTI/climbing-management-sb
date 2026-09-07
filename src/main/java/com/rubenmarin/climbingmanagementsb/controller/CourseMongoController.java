@@ -1,9 +1,10 @@
 package com.rubenmarin.climbingmanagementsb.controller;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
-import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
+import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
 import com.rubenmarin.climbingmanagementsb.service.CourseMongoService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -35,13 +36,13 @@ public class CourseMongoController {
     }
 
     @PostMapping
-    public ResponseEntity<CourseMongoResponseDto> createCourse(@RequestBody CourseMongoDocument course) {
+    public ResponseEntity<CourseMongoResponseDto> createCourse(@Valid @RequestBody CourseMongoRequestDto course) {
         CourseMongoResponseDto created = courseMongoService.create(course);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    public CourseMongoResponseDto updateCourse(@PathVariable String id, @RequestBody CourseMongoDocument course) {
+    public CourseMongoResponseDto updateCourse(@PathVariable String id, @Valid @RequestBody CourseMongoRequestDto course) {
         return courseMongoService.update(id, course);
     }
 
