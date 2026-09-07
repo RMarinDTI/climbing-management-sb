@@ -67,39 +67,39 @@ public class CourseMongoService {
         courseMongoRepository.deleteById(id);
     }
 
-    public List<CourseMongoDocument> findByDifficulty(Difficulty difficulty) {
-        return courseMongoRepository.findByDifficulty(difficulty);
+    public List<CourseMongoResponseDto> findByDifficulty(Difficulty difficulty) {
+        return courseMongoRepository.findByDifficulty(difficulty).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findByDifficultyAndPriceLessThan(Difficulty difficulty, Double price) {
-        return courseMongoRepository.findByDifficultyAndPriceLessThan(difficulty, price);
+    public List<CourseMongoResponseDto> findByDifficultyAndPriceLessThan(Difficulty difficulty, Double price) {
+        return courseMongoRepository.findByDifficultyAndPriceLessThan(difficulty, price).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findCoursesByDifficultyAndMaxPriceQuery(Difficulty difficulty, Double price) {
-        return courseMongoRepository.findCoursesByDifficultyAndMaxPriceQuery(difficulty, price);
+    public List<CourseMongoResponseDto> findCoursesByDifficultyAndMaxPriceQuery(Difficulty difficulty, Double price) {
+        return courseMongoRepository.findCoursesByDifficultyAndMaxPriceQuery(difficulty, price).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findCoursesWithMinimumPrice(Double price) {
-        return courseMongoRepository.findCoursesWithMinimumPriceQuery(price);
+    public List<CourseMongoResponseDto> findCoursesWithMinimumPrice(Double price) {
+        return courseMongoRepository.findCoursesWithMinimumPriceQuery(price).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findByDifficultyIn(List<Difficulty> difficulties) {
-        return courseMongoRepository.findByDifficultyIn(difficulties);
+    public List<CourseMongoResponseDto> findByDifficultyIn(List<Difficulty> difficulties) {
+        return courseMongoRepository.findByDifficultyIn(difficulties).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findByDifficultyInQuery(List<Difficulty> difficulties) {
-        return courseMongoRepository.findByDifficultyInQuery(difficulties);
+    public List<CourseMongoResponseDto> findByDifficultyInQuery(List<Difficulty> difficulties) {
+        return courseMongoRepository.findByDifficultyInQuery(difficulties).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findByDifficultyNotInQuery(List<Difficulty> difficulties) {
-        return courseMongoRepository.findByDifficultyNotInQuery(difficulties);
+    public List<CourseMongoResponseDto> findByDifficultyNotInQuery(List<Difficulty> difficulties) {
+        return courseMongoRepository.findByDifficultyNotInQuery(difficulties).stream().map(this::toDto).toList();
     }
 
-    public List<CourseMongoDocument> findByNameContainingIgnoreCase(String name) {
-        return courseMongoRepository.findByNameContainingIgnoreCase(name);
+    public List<CourseMongoResponseDto> findByNameContainingIgnoreCase(String name) {
+        return courseMongoRepository.findByNameContainingIgnoreCase(name).stream().map(this::toDto).toList();
     }
 
-    public Page<CourseMongoDocument> findByDifficultyAndPriceLessThanEqual(Difficulty difficulty, Double price, Pageable pageable) {
-        return courseMongoRepository.findByDifficultyAndPriceLessThanEqual(difficulty, price, pageable);
+    public Page<CourseMongoResponseDto> findByDifficultyAndPriceLessThanEqual(Difficulty difficulty, Double price, Pageable pageable) {
+        return courseMongoRepository.findByDifficultyAndPriceLessThanEqual(difficulty, price, pageable).map(this::toDto);
     }
 }
