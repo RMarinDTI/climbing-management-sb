@@ -5,6 +5,7 @@ import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
 import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
+import com.rubenmarin.climbingmanagementsb.dto.CourseWithEnrollmentsDto;
 import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
 import com.rubenmarin.climbingmanagementsb.exception.ExceptionMsg;
 import com.rubenmarin.climbingmanagementsb.repository.CourseMongoRepository;
@@ -117,6 +118,10 @@ public class CourseMongoService {
 
     public List<CourseDifficultyStatsDto> getDifficultyStats() {
         return courseMongoRepository.getDifficultyStats();
+    }
+
+    public List<CourseWithEnrollmentsDto> findCoursesWithEnrollments() {
+        return courseMongoRepository.findCoursesWithEnrollments();
     }
 
 }

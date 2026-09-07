@@ -3,6 +3,7 @@ package com.rubenmarin.climbingmanagementsb.repository;
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
 import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
+import com.rubenmarin.climbingmanagementsb.dto.CourseWithEnrollmentsDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -110,5 +111,47 @@ public class CourseMongoCustomRepositoryImpl implements CourseMongoCustomReposit
         // Execute the aggregation and map each result to our DTO.
         // Aggregation = pipeline builder, MongoTemplate.aggregate() = executes the pipeline, DTO = receives the mapped results.
         return mongoTemplate.aggregate(aggregation, CourseMongoDocument.class, CourseDifficultyStatsDto.class).getMappedResults();
+    }
+
+    /*
+     * Retrieves courses together with their enrollments.
+     *
+     * The custom repository uses MongoTemplate and a $lookup aggregation to join courses with the enrollments collection.
+     */
+    @Override
+    public List<CourseWithEnrollmentsDto> findCoursesWithEnrollments() {
+
+        Aggregation aggregation = Aggregation.newAggregation(
+
+                /*
+                 * Join the courses collection with the enrollments collection.
+                 *
+                 * courses._id
+                 *      ↓
+                 * enrollments.courseId
+                 *
+                 * The matching enrollments are stored in the "enrollments" array.
+                 */
+                Aggregation.lookup(
+                        "enrollments",
+                        "_id",
+                        "courseId",
+                        "enrollments"
+                ),
+
+                /*
+                 * Select the fields that we want to expose.
+                 *
+                 * The aggregation result is mapped directly to CourseWithEnrollmentsDto.
+                 */
+                Aggregation.project()
+                        .and("_id").as("id")
+                        .and("name").as("name")
+                        .and("price").as("price")
+                        .and("difficulty").as("difficulty")
+                        .and("enrollments").as("enrollments")
+        );
+
+        return mongoTemplate.aggregate(aggregation, CourseMongoDocument.class, CourseWithEnrollmentsDto.class).getMappedResults();
     }
 }

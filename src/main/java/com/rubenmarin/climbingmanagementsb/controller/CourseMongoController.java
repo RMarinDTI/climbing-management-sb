@@ -4,6 +4,7 @@ import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
+import com.rubenmarin.climbingmanagementsb.dto.CourseWithEnrollmentsDto;
 import com.rubenmarin.climbingmanagementsb.service.CourseMongoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -150,6 +151,19 @@ public class CourseMongoController {
     @GetMapping("/difficulty-stats")
     public List<CourseDifficultyStatsDto> getDifficultyStats() {
         return courseMongoService.getDifficultyStats();
+    }
+
+    /*
+     * MongoDB $lookup:
+     * joins courses with enrollments using:
+     *
+     * courses._id = enrollments.courseId
+     *
+     * GET http://localhost:8080/mongo/courses/with-enrollments
+     */
+    @GetMapping("/with-enrollments")
+    public List<CourseWithEnrollmentsDto> findCoursesWithEnrollments() {
+        return courseMongoService.findCoursesWithEnrollments();
     }
 
 }
