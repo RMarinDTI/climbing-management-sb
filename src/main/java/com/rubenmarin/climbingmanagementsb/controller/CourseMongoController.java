@@ -166,4 +166,22 @@ public class CourseMongoController {
         return courseMongoService.findCoursesWithEnrollments();
     }
 
+    /*
+     * GET http://localhost:8080/mongo/courses/transaction-test
+     */
+    @PostMapping("/transaction-test")
+    public ResponseEntity<Void> transactionTest() {
+        courseMongoService.createCourseWithFailure();
+        return ResponseEntity.ok().build();
+    }
+
+    /*
+     * GET http://localhost:8080/mongo/courses/transaction-test2
+     */
+    @PostMapping("/transaction-test2")
+    public ResponseEntity<Void> transactionTest2() {
+        courseMongoService.createCourseWithEnrollmentAndFailure();
+        return ResponseEntity.ok().build();
+    }
+
 }

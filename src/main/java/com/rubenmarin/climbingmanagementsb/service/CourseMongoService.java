@@ -2,6 +2,7 @@ package com.rubenmarin.climbingmanagementsb.service;
 
 import com.rubenmarin.climbingmanagementsb.Difficulty;
 import com.rubenmarin.climbingmanagementsb.document.CourseMongoDocument;
+import com.rubenmarin.climbingmanagementsb.document.EnrollmentMongoDocument;
 import com.rubenmarin.climbingmanagementsb.dto.CourseDifficultyStatsDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoRequestDto;
 import com.rubenmarin.climbingmanagementsb.dto.CourseMongoResponseDto;
@@ -10,9 +11,11 @@ import com.rubenmarin.climbingmanagementsb.exception.CourseNotFoundException;
 import com.rubenmarin.climbingmanagementsb.exception.ExceptionMsg;
 import com.rubenmarin.climbingmanagementsb.repository.CourseMongoRepository;
 
+import com.rubenmarin.climbingmanagementsb.repository.EnrollmentMongoRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,10 +23,11 @@ import java.util.List;
 public class CourseMongoService {
 
     private final CourseMongoRepository courseMongoRepository;
+    private final EnrollmentMongoRepository enrollmentMongoRepository;
 
-
-    public CourseMongoService(CourseMongoRepository courseMongoRepository) {
+    public CourseMongoService(CourseMongoRepository courseMongoRepository, EnrollmentMongoRepository enrollmentMongoRepository) {
         this.courseMongoRepository = courseMongoRepository;
+        this.enrollmentMongoRepository = enrollmentMongoRepository;
 
     }
 
@@ -116,12 +120,38 @@ public class CourseMongoService {
         return courseMongoRepository.search(name, difficulty, minPrice, maxPrice, pageable).map(this::toDtoResponse);
     }
 
+    // Aggregation: Match - Group - Project
     public List<CourseDifficultyStatsDto> getDifficultyStats() {
         return courseMongoRepository.getDifficultyStats();
     }
 
+    // Aggregation: lookup - project
     public List<CourseWithEnrollmentsDto> findCoursesWithEnrollments() {
         return courseMongoRepository.findCoursesWithEnrollments();
+    }
+
+
+    //transactions on MongoDB requires to create different nodes
+    @Transactional
+    public void createCourseWithFailure() {
+        CourseMongoDocument course = new CourseMongoDocument("Transactional Course", 200.0, Difficulty.HARD);
+        courseMongoRepository.save(course);
+
+        // Force an exception after the first write.
+        throw new RuntimeException("Simulated transaction failure");
+    }
+
+    //transactions on MongoDB requires to create different nodes
+    @Transactional
+    public void createCourseWithEnrollmentAndFailure() {
+        CourseMongoDocument course = new CourseMongoDocument("Transactional Course", 200.0, Difficulty.HARD);
+        courseMongoRepository.save(course);
+
+        EnrollmentMongoDocument enrollment = new EnrollmentMongoDocument(course.getId(), "Transactional Student");
+        enrollmentMongoRepository.save(enrollment);
+
+        // Simulate a failure after both writes.
+        throw new RuntimeException("Simulated transaction failure");
     }
 
 }
