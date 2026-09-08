@@ -33,10 +33,14 @@ The application is being developed incrementally, introducing technologies and a
 * **IntelliJ IDEA**
 * **Postman**
 
+### Infrastructure
+
+* **Docker** — in progress
+* **Docker Compose** — upcoming
+* **Kubernetes** — upcoming
+
 ### Planned
 
-* **Docker**
-* **Kubernetes**
 * Automated testing
 * Integration testing
 * CI/CD
@@ -65,8 +69,9 @@ The application follows a layered architecture:
               ▼                 ▼
          Spring Data        MongoTemplate
               │                 │
-              ▼                 ▼
-         PostgreSQL          MongoDB
+       ┌──────┴──────┐          │
+       ▼             ▼          ▼
+  PostgreSQL      MongoDB    MongoDB
 ```
 
 ### Main layers
@@ -123,7 +128,7 @@ GET /jpa/courses/difficulty/{difficulty}/price/{price}
 
 ---
 
-## 🗄️ Spring Data JPA
+# 🗄️ Spring Data JPA
 
 The PostgreSQL persistence layer uses:
 
@@ -353,10 +358,11 @@ Database:
 climbing_management
 ```
 
-Collection:
+Collections:
 
 ```text
 courses
+enrollments
 ```
 
 ---
@@ -646,11 +652,13 @@ MongoDB index creation is enabled through:
 spring.data.mongodb.auto-index-creation=true
 ```
 
+The project also covers why **compound index field order matters** and how index design should be based on real query patterns.
+
 ---
 
 # 🔬 MongoDB `explain()`
 
-The project also demonstrates how to analyze query execution.
+The project demonstrates how to analyze query execution.
 
 Example:
 
@@ -672,22 +680,13 @@ nReturned
 executionTimeMillis
 ```
 
-Example successful execution:
-
-```text
-winningPlan → IXSCAN
-nReturned → 3
-totalKeysExamined → 3
-totalDocsExamined → 3
-```
-
-This demonstrates that MongoDB is using the compound index rather than scanning the entire collection.
+This demonstrates how to verify whether MongoDB is using the expected index instead of scanning the entire collection.
 
 ---
 
 # 📈 MongoDB Aggregation
 
-The project demonstrates MongoDB aggregation pipelines using both MongoDB directly and `MongoTemplate`.
+The project demonstrates MongoDB aggregation pipelines using `MongoTemplate`.
 
 Example aggregation:
 
@@ -742,23 +741,6 @@ The results are mapped to:
 CourseDifficultyStatsDto
 ```
 
-Example response:
-
-```json
-[
-    {
-        "difficulty": "HARD",
-        "averagePrice": 166.66666666666666,
-        "courseCount": 3
-    },
-    {
-        "difficulty": "MEDIUM",
-        "averagePrice": 135.0,
-        "courseCount": 3
-    }
-]
-```
-
 This demonstrates server-side filtering, grouping, calculations, projection and sorting.
 
 ---
@@ -772,15 +754,6 @@ Two collections are used:
 ```text
 courses
 enrollments
-```
-
-Example enrollment:
-
-```json
-{
-    "courseId": ObjectId("6a9ada74aed9b79d82d16295"),
-    "studentName": "John"
-}
 ```
 
 The project uses MongoDB's:
@@ -820,31 +793,6 @@ The result is mapped to:
 
 ```java
 CourseWithEnrollmentsDto
-```
-
-with nested:
-
-```java
-EnrollmentDto
-```
-
-Example API response:
-
-```json
-{
-    "id": "6a9ada74aed9b79d82d16295",
-    "name": "Via Ferrata",
-    "price": 90.0,
-    "difficulty": "EASY",
-    "enrollments": [
-        {
-            "studentName": "John"
-        },
-        {
-            "studentName": "Anna"
-        }
-    ]
-}
 ```
 
 The `$lookup` behaves similarly to a **LEFT OUTER JOIN** in relational databases: courses without matching enrollments are still returned with an empty `enrollments` array.
@@ -899,6 +847,61 @@ The appropriate strategy depends on:
 
 ---
 
+# 💳 MongoDB Transactions
+
+The project demonstrates MongoDB transactions using Spring's `@Transactional`.
+
+MongoDB transactions require a **replica set or sharded cluster**.
+
+For local development, the project uses a **single-node replica set**, which is sufficient for transaction support.
+
+Example:
+
+```text
+Replica Set: rs0
+
+127.0.0.1:27017
+       │
+       ▼
+    PRIMARY
+```
+
+The project demonstrates rollback after a failed operation:
+
+```java
+@Transactional
+public void createCourseWithFailure() {
+    CourseMongoDocument course =
+        new CourseMongoDocument(
+            "Transactional Course",
+            200.0,
+            Difficulty.HARD
+        );
+
+    courseMongoRepository.save(course);
+
+    throw new RuntimeException(
+        "Simulated transaction failure"
+    );
+}
+```
+
+It also demonstrates a transaction spanning multiple MongoDB collections:
+
+```text
+Transaction
+    │
+    ├── courses
+    │
+    └── enrollments
+```
+
+If the transaction fails after both writes, both operations are rolled back.
+
+This demonstrates MongoDB transaction behaviour and the importance of configuring MongoDB as a replica set for transactional workloads.
+
+---
+
 # 🌐 MongoDB Endpoints
 
 Current MongoDB course endpoints include:
@@ -908,7 +911,7 @@ GET    /mongo/courses
 GET    /mongo/courses/{id}
 POST   /mongo/courses
 PUT    /mongo/courses/{id}
-DELETE  /mongo/courses/{id}
+DELETE /mongo/courses/{id}
 ```
 
 Query examples:
@@ -938,6 +941,37 @@ GET /mongo/courses/difficulty-stats
 
 GET /mongo/courses/with-enrollments
 ```
+
+---
+
+# 🐳 Docker
+
+Docker is the next infrastructure milestone of the project.
+
+The Docker module will containerize the Spring Boot application and introduce the fundamentals of containerized backend deployments.
+
+Planned topics include:
+
+* Docker images
+* Docker containers
+* Dockerfile
+* Image layers
+* Port mapping
+* Environment variables
+* Container logs
+* Container lifecycle
+* Volumes
+* Docker networks
+* Spring Boot containerization
+* PostgreSQL containers
+* MongoDB containers
+* Docker Compose
+* Multi-container applications
+* Health checks
+* Multi-stage builds
+* Production-oriented Docker images
+
+The objective is to run the backend and its infrastructure as reproducible containers instead of depending entirely on local installations.
 
 ---
 
@@ -985,26 +1019,33 @@ The project is being developed progressively.
 * [x] Aggregation DTO mapping
 * [x] MongoDB `$lookup`
 * [x] Embedded vs referenced document modelling
+* [x] MongoDB replica set configuration
+* [x] MongoDB transactions
+* [x] MongoDB transaction rollback
+* [x] Multi-collection MongoDB transactions
+* [x] MongoDB interview comparison with PostgreSQL
 
 ## In Progress
 
-* [ ] MongoDB transactions
-* [ ] Final MongoDB interview Q&A
-* [ ] MongoDB code cleanup
+* [ ] Docker
+* [ ] Spring Boot containerization
+* [ ] Docker networking
+* [ ] Docker Compose
 
 ## Upcoming
 
-* [ ] Docker
-* [ ] Containerized application
-* [ ] Docker Compose
 * [ ] Kubernetes
 * [ ] Kubernetes deployments and services
-* [ ] Microservices
-* [ ] Messaging
+* [ ] Advanced REST API design
+* [ ] Security / Spring Security
 * [ ] Automated testing
 * [ ] Unit testing
 * [ ] Integration testing
+* [ ] Messaging
+* [ ] Microservices
 * [ ] CI/CD
+* [ ] System design
+* [ ] Senior Backend Java interview preparation
 
 ---
 
@@ -1031,12 +1072,17 @@ Key areas include:
 * NoSQL databases
 * MongoDB data modelling
 * MongoDB indexing
+* Query performance analysis
 * Dynamic queries
 * Aggregation pipelines
 * Collection joins using `$lookup`
+* MongoDB transactions
 * Containerization
+* Docker Compose
 * Kubernetes
 * Distributed systems
+* Messaging
+* Microservices
 
 The project is also used as a practical learning environment for **Senior Backend Java development and technical interview preparation**.
 
@@ -1051,6 +1097,8 @@ The project is also used as a practical learning environment for **Senior Backen
 * PostgreSQL 17
 * MongoDB 8+
 * Git
+
+Docker requirements will be added as part of the Docker module.
 
 Clone the repository:
 
@@ -1178,7 +1226,9 @@ Code cleanup
 Git commit
 ```
 
-This approach makes the project both a functional backend application and a practical **Senior Java interview preparation environment**.
+Each major milestone is also committed to Git so the repository provides a clear history of the technologies and concepts implemented.
+
+The result is both a functional backend application and a practical **Senior Backend Java interview preparation environment**.
 
 ---
 
