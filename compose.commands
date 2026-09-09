@@ -1,0 +1,32 @@
+docker compose ps
+
+docker compose logs app
+docker compose logs app --tail 30
+
+### Rebuilding
+        docker compose down
+        docker compose up -d --build
+
+### docker compose exec = execute a command inside an already-running container.
+        docker compose exec app sh
+            whoami
+            ls -la /app
+            exit
+            wget -S -O - http://localhost:8080/
+
+ ### docker compose config = what Compose is going to configure.
+ ### docker inspect = what the created container actually has.
+        docker inspect climbing-management-sb-app-1
+
+
+
+### Docker troubleshooting — deliberate failure #1
+### The Spring Boot container cannot connect to PostgreSQL because it is using the wrong hostname.
+### Verify Docker DNS with getent hosts postgres and inspect the container configuration with docker inspect.
+        docker compose exec app sh
+            getent hosts postgres
+            getent hosts mongo
+
+### Docker troubleshooting #2 — Health checks
+### Container is running  ≠ Application is healthy
+        docker inspect climbing-management-sb-app-1 --format '{{json .State.Health}}'
