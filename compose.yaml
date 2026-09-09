@@ -2,7 +2,8 @@
 # docker compose down
 # docker compose config
 # docker compose logs app -f
-# docker compose up -d --force-recreate postgre
+# docker compose up -d --build
+# docker compose up -d --force-recreate postgres
 # docker compose exec app sh
 # docker compose ps -a
 # docker compose exec app ls -la /run/secrets
@@ -13,13 +14,14 @@ services:
     image: postgres:17
 
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${ENV_POSTGRES_DB}
+      POSTGRES_USER: ${ENV_POSTGRES_USER}
       #The application should not receive the database password as an environment variable.
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
 
     secrets:
-      #- postgres_password
+      # Docker secret is mounted with different filenames depending on the consumer:
+      # PostgreSQL: /run/secrets/postgres_password
       - source: postgres_password
         target: postgres_password
 
@@ -27,7 +29,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${ENV_POSTGRES_USER} -d ${ENV_POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,7 +53,7 @@ services:
     build: .
 
     ports:
-      - "${APP_PORT}:8080"
+      - "${ENV_APP_PORT}:8080"
 
     # Docker mounts the container's root filesystem as read-only
     read_only: true
@@ -66,11 +68,13 @@ services:
       # container    .env / Compose
       # variable
       #   ↓           ↓
-      MONGO_DB: ${MONGO_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      APP_MONGO_DB: ${ENV_MONGO_DB}
+      APP_POSTGRES_USER: ${ENV_POSTGRES_USER}
+      APP_POSTGRES_DB: ${ENV_POSTGRES_DB}
 
     secrets:
-     # - postgres_password
+      # Docker secret is mounted with different filenames depending on the consumer:
+      # App: /run/secrets/spring.datasource.password
       - source: postgres_password
         target: spring.datasource.password
 
@@ -89,5 +93,4 @@ volumes:
 # A service can reference a secret only if that secret is declared at the top-level Compose scope.
 secrets:
   postgres_password:
-    #file: ./secrets/postgres_password.txt
     file: ./secrets/spring.datasource.password
