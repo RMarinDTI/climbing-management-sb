@@ -2,7 +2,7 @@
 
 A backend application built with **Java 21 and Spring Boot** to manage climbing courses.
 
-The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, and clean layered architecture.
+The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, containerization, security practices, and clean layered architecture.
 
 The application is being developed incrementally, introducing technologies and architectural patterns commonly used in enterprise Java applications.
 
@@ -17,35 +17,41 @@ The application is being developed incrementally, introducing technologies and a
 * **Spring Web**
 * **Spring Data JPA**
 * **Spring Data MongoDB**
+* **Spring Boot Actuator**
 * **Hibernate**
 * **Jakarta Bean Validation**
 * **SLF4J / Logging**
 
 ### Databases
 
-* **PostgreSQL**
-* **MongoDB**
+* **PostgreSQL 17**
+* **MongoDB 7**
 
 ### Development Tools
 
-* **Maven**
+* **Maven 3.9+**
 * **Git / GitHub**
 * **IntelliJ IDEA**
 * **Postman**
 
 ### Infrastructure
 
-* **Docker** — in progress
-* **Docker Compose** — upcoming
-* **Kubernetes** — upcoming
+* **Docker**
+* **Docker Compose**
+* **Docker Secrets**
+* **Docker Healthchecks**
+* **Docker multi-stage builds**
+* **Trivy vulnerability scanning**
 
 ### Planned
 
-* Automated testing
-* Integration testing
-* CI/CD
+* GitHub Actions / CI/CD
+* Kubernetes
+* Advanced testing / Testcontainers
+* Spring Security
 * Messaging
 * Microservices
+* System design
 
 ---
 
@@ -946,32 +952,401 @@ GET /mongo/courses/with-enrollments
 
 # 🐳 Docker
 
-Docker is the next infrastructure milestone of the project.
+Docker containerizes the complete backend environment and its infrastructure.
 
-The Docker module will containerize the Spring Boot application and introduce the fundamentals of containerized backend deployments.
+The application can run as a multi-container stack using Docker Compose:
 
-Planned topics include:
+```text
+                    Docker Compose
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+       Spring Boot    PostgreSQL      MongoDB
+          │
+          │
+     port 8080
+```
 
-* Docker images
-* Docker containers
-* Dockerfile
-* Image layers
-* Port mapping
-* Environment variables
-* Container logs
-* Container lifecycle
-* Volumes
-* Docker networks
-* Spring Boot containerization
-* PostgreSQL containers
-* MongoDB containers
-* Docker Compose
-* Multi-container applications
-* Health checks
-* Multi-stage builds
-* Production-oriented Docker images
+PostgreSQL and MongoDB communicate with the application through the Docker Compose network using service names:
 
-The objective is to run the backend and its infrastructure as reproducible containers instead of depending entirely on local installations.
+```text
+postgres:5432
+mongo:27017
+```
+
+The application exposes port `8080` to the host.
+
+---
+
+## Dockerfile
+
+The application uses a **multi-stage Docker build**.
+
+```text
+Build stage
+    │
+    ├── Maven
+    ├── JDK 21
+    ├── Dependency resolution
+    └── Application compilation
+             │
+             ▼
+        application JAR
+             │
+             ▼
+Runtime stage
+    │
+    ├── Java 21 JRE
+    ├── Alpine Linux
+    └── application JAR
+```
+
+The Maven build environment is not included in the final runtime image.
+
+This reduces:
+
+* Image size
+* Attack surface
+* Number of unnecessary production dependencies
+
+The dependency layer is also separated from the source-code layer to improve Docker build-cache reuse.
+
+---
+
+# 🔐 Docker Security
+
+The container is hardened using several production-oriented practices.
+
+### Non-root user
+
+The Spring Boot application does not run as root.
+
+```dockerfile
+RUN addgroup -S spring && adduser -S spring -G spring
+
+USER spring
+```
+
+The container was verified to run as:
+
+```text
+spring
+```
+
+### Read-only root filesystem
+
+The application container uses:
+
+```yaml
+read_only: true
+```
+
+Temporary writable storage is provided through:
+
+```yaml
+tmpfs:
+  - /tmp
+```
+
+This reduces the ability of a compromised application to modify the container filesystem.
+
+---
+
+# 🔑 Docker Secrets
+
+Database credentials are not passed to the Spring Boot application as environment variables.
+
+Instead, Docker Secrets are used.
+
+Conceptually:
+
+```text
+Docker Secret
+     │
+     ├──────────────► PostgreSQL
+     │
+     └──────────────► Spring Boot
+```
+
+PostgreSQL receives the secret through:
+
+```text
+/run/secrets/postgres_password
+```
+
+The Spring Boot application receives it through:
+
+```text
+/run/secrets/spring.datasource.password
+```
+
+Spring Boot imports the mounted secret using:
+
+```properties
+spring.config.import=optional:configtree:/run/secrets/
+```
+
+This maps the mounted filename to:
+
+```text
+spring.datasource.password
+```
+
+The database password is therefore not exposed as an application environment variable.
+
+---
+
+# 🌐 Docker Networking
+
+Docker Compose provides an internal DNS service.
+
+Containers communicate using service names rather than `localhost`.
+
+For example:
+
+```text
+Spring Boot
+     │
+     ├── postgres:5432
+     │
+     └── mongo:27017
+```
+
+Inside the Spring Boot container:
+
+```text
+localhost
+```
+
+refers to the Spring Boot container itself.
+
+It does **not** refer to PostgreSQL or MongoDB.
+
+This distinction is essential when troubleshooting containerized applications.
+
+---
+
+# ❤️ Docker Healthchecks
+
+Spring Boot Actuator is used to expose application health information.
+
+The health endpoint is:
+
+```text
+GET /actuator/health
+```
+
+Example response:
+
+```json
+{
+    "groups": [
+        "liveness",
+        "readiness"
+    ],
+    "status": "UP"
+}
+```
+
+Docker uses the endpoint as its container healthcheck:
+
+```yaml
+healthcheck:
+  test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 20s
+```
+
+The `start_period` prevents normal application startup time from immediately causing the container to become unhealthy.
+
+The project also demonstrates the distinction between:
+
+```text
+Liveness
+    ↓
+Is the application alive?
+
+Readiness
+    ↓
+Is the application ready to receive traffic?
+```
+
+These concepts will become particularly important when the application is deployed to Kubernetes.
+
+---
+
+# 🩺 Docker Troubleshooting
+
+The project includes hands-on troubleshooting exercises covering:
+
+```text
+docker compose ps
+docker compose logs
+docker compose exec
+docker inspect
+```
+
+The troubleshooting workflow is:
+
+```text
+docker compose ps
+        ↓
+Is the container running?
+        ↓
+docker compose logs
+        ↓
+What is the application reporting?
+        ↓
+docker compose exec app sh
+        ↓
+Can we inspect the container from inside?
+        ↓
+docker inspect
+        ↓
+What configuration was actually applied?
+```
+
+Docker DNS can also be verified from inside the application container:
+
+```bash
+getent hosts postgres
+getent hosts mongo
+```
+
+A deliberate failure was introduced by changing the PostgreSQL hostname from:
+
+```text
+postgres
+```
+
+to:
+
+```text
+localhost
+```
+
+The resulting failure demonstrated that `localhost` inside a container refers to the container itself rather than another Compose service.
+
+The issue was diagnosed through application logs, container inspection and Docker DNS verification.
+
+---
+
+# 🔍 Docker Vulnerability Scanning
+
+The project uses **Trivy** to scan Docker images for known vulnerabilities.
+
+Example:
+
+```bash
+trivy image climbing-management-sb-app:latest
+```
+
+The project demonstrated the difference between vulnerabilities in:
+
+```text
+Application dependencies
+        vs
+Base operating-system packages
+```
+
+A vulnerability scan initially detected critical vulnerabilities in:
+
+```text
+org.apache.tomcat.embed:tomcat-embed-core
+```
+
+The dependency was traced through the Maven dependency tree:
+
+```text
+Spring Boot
+    ↓
+spring-boot-starter-tomcat
+    ↓
+tomcat-embed-core
+```
+
+The Tomcat version was explicitly overridden to the fixed release.
+
+The application JAR subsequently reported:
+
+```text
+CRITICAL: 0
+```
+
+Remaining operating-system vulnerabilities were identified separately as Alpine base-image findings.
+
+This demonstrates a practical vulnerability-management workflow:
+
+```text
+Scan
+  ↓
+Identify severity
+  ↓
+Locate dependency
+  ↓
+Determine fixed version
+  ↓
+Update dependency
+  ↓
+Rebuild image
+  ↓
+Rescan
+```
+
+---
+
+# 🧪 Docker + Spring Boot Configuration
+
+Docker-specific Spring configuration is activated using:
+
+```yaml
+SPRING_PROFILES_ACTIVE: docker
+```
+
+The Docker profile uses Compose service names:
+
+```properties
+spring.datasource.url=jdbc:postgresql://postgres:5432/${APP_POSTGRES_DB}
+
+spring.mongodb.uri=mongodb://mongo:27017/${APP_MONGO_DB}
+```
+
+The configuration flow is:
+
+```text
+.env
+ │
+ ├── ENV_POSTGRES_DB
+ ├── ENV_POSTGRES_USER
+ ├── ENV_MONGO_DB
+ └── ENV_APP_PORT
+        │
+        ▼
+Docker Compose
+        │
+        ▼
+Spring Boot environment
+        │
+        ▼
+application-docker.properties
+```
+
+Secrets follow a separate path:
+
+```text
+Docker Secret
+      │
+      ▼
+/run/secrets/
+      │
+      ▼
+Spring Boot configtree
+      │
+      ▼
+spring.datasource.password
+```
 
 ---
 
@@ -1024,26 +1399,55 @@ The project is being developed progressively.
 * [x] MongoDB transaction rollback
 * [x] Multi-collection MongoDB transactions
 * [x] MongoDB interview comparison with PostgreSQL
+* [x] Docker fundamentals
+* [x] Docker images and containers
+* [x] Dockerfile
+* [x] Docker image layers and build cache
+* [x] Docker port mapping
+* [x] Docker environment variables
+* [x] Docker volumes
+* [x] Docker networks
+* [x] PostgreSQL container
+* [x] MongoDB container
+* [x] Docker Compose
+* [x] Multi-container application
+* [x] Docker Compose service discovery
+* [x] Multi-stage Docker builds
+* [x] Alpine-based runtime image
+* [x] Non-root container user
+* [x] Read-only container filesystem
+* [x] Docker tmpfs
+* [x] Docker Secrets
+* [x] Spring Boot Docker profile
+* [x] Spring Boot Actuator
+* [x] Docker healthchecks
+* [x] Liveness / readiness concepts
+* [x] Docker troubleshooting
+* [x] Container inspection with `docker inspect`
+* [x] Docker DNS troubleshooting
+* [x] Trivy vulnerability scanning
+* [x] Dependency vulnerability remediation
 
-## In Progress
+## Current
 
-* [ ] Docker
-* [ ] Spring Boot containerization
-* [ ] Docker networking
-* [ ] Docker Compose
+* [ ] CI/CD
+* [ ] GitHub Actions
 
 ## Upcoming
 
+* [ ] Docker image publishing
+* [ ] Container registry
 * [ ] Kubernetes
-* [ ] Kubernetes deployments and services
+* [ ] Kubernetes Deployments
+* [ ] Kubernetes Services
+* [ ] Kubernetes health probes
 * [ ] Advanced REST API design
-* [ ] Security / Spring Security
-* [ ] Automated testing
+* [ ] Spring Security
 * [ ] Unit testing
 * [ ] Integration testing
+* [ ] Testcontainers
 * [ ] Messaging
 * [ ] Microservices
-* [ ] CI/CD
 * [ ] System design
 * [ ] Senior Backend Java interview preparation
 
@@ -1079,6 +1483,11 @@ Key areas include:
 * MongoDB transactions
 * Containerization
 * Docker Compose
+* Docker security
+* Docker Secrets
+* Healthchecks
+* Vulnerability scanning
+* CI/CD
 * Kubernetes
 * Distributed systems
 * Messaging
@@ -1092,13 +1501,20 @@ The project is also used as a practical learning environment for **Senior Backen
 
 ## Requirements
 
+### Local development
+
 * Java 21
 * Maven 3.9+
 * PostgreSQL 17
-* MongoDB 8+
+* MongoDB 7+
 * Git
 
-Docker requirements will be added as part of the Docker module.
+### Docker development
+
+* Docker Desktop
+* Docker Compose
+
+The recommended development approach is to run the infrastructure and application through Docker Compose.
 
 Clone the repository:
 
@@ -1107,13 +1523,23 @@ git clone <repository-url>
 cd climbing-management-sb
 ```
 
-Build the project:
+---
+
+## Maven
+
+Run the test suite:
 
 ```bash
-mvn clean install
+mvn clean test
 ```
 
-Run the application:
+Build the application:
+
+```bash
+mvn clean package
+```
+
+Run the application locally:
 
 ```bash
 mvn spring-boot:run
@@ -1123,6 +1549,64 @@ The API will be available at:
 
 ```text
 http://localhost:8080
+```
+
+---
+
+## Docker Compose
+
+Start the complete environment:
+
+```bash
+docker compose up -d --build
+```
+
+Check the containers:
+
+```bash
+docker compose ps
+```
+
+View application logs:
+
+```bash
+docker compose logs app
+```
+
+Follow application logs:
+
+```bash
+docker compose logs -f app
+```
+
+Stop the environment:
+
+```bash
+docker compose down
+```
+
+The application will be available at:
+
+```text
+http://localhost:8080
+```
+
+Healthcheck:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+Expected response:
+
+```json
+{
+    "groups": [
+        "liveness",
+        "readiness"
+    ],
+    "status": "UP"
+}
 ```
 
 ---
@@ -1219,6 +1703,8 @@ API testing
    ↓
 Concurrency / behaviour testing
    ↓
+Troubleshooting
+   ↓
 Interview questions
    ↓
 Code cleanup
@@ -1226,7 +1712,7 @@ Code cleanup
 Git commit
 ```
 
-Each major milestone is also committed to Git so the repository provides a clear history of the technologies and concepts implemented.
+Each major milestone is committed to Git so the repository provides a clear history of the technologies and concepts implemented.
 
 The result is both a functional backend application and a practical **Senior Backend Java interview preparation environment**.
 
@@ -1240,4 +1726,4 @@ Backend Java Developer
 
 Technologies explored in this project include:
 
-`Java` · `Spring Boot` · `Spring Data JPA` · `Hibernate` · `PostgreSQL` · `Spring Data MongoDB` · `MongoDB` · `MongoTemplate` · `Docker` · `Kubernetes`
+`Java` · `Spring Boot` · `Spring Data JPA` · `Hibernate` · `PostgreSQL` · `Spring Data MongoDB` · `MongoDB` · `MongoTemplate` · `Docker` · `Docker Compose` · `GitHub Actions` · `Kubernetes`
