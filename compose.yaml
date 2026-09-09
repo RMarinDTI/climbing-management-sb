@@ -1,13 +1,31 @@
+# docker compose up -d
+# docker compose down
+# docker compose config
+# docker compose logs app -f
+# docker compose up -d --force-recreate postgre
+# docker compose exec app sh
+# docker compose ps -a
+# docker compose exec app ls -la /run/secrets
+
 services:
 
   postgres:
     image: postgres:17
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      #The application should not receive the database password as an environment variable.
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+
+    secrets:
+      #- postgres_password
+      - source: postgres_password
+        target: postgres_password
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
@@ -16,9 +34,11 @@ services:
 
   mongo:
     image: mongo:7
+
     volumes:
       - mongo-data:/data/db
       - mongo-config:/data/configdb
+
     healthcheck:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 5s
@@ -42,10 +62,17 @@ services:
 
     environment:
       SPRING_PROFILES_ACTIVE: docker
+
+      # container    .env / Compose
+      # variable
+      #   ↓           ↓
       MONGO_DB: ${MONGO_DB}
-     #   ↑           ↑
-     # container    .env / Compose
-     # variable
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+
+    secrets:
+     # - postgres_password
+      - source: postgres_password
+        target: spring.datasource.password
 
     depends_on:
       postgres:
@@ -58,3 +85,9 @@ volumes:
   postgres-data:
   mongo-data:
   mongo-config:
+
+# A service can reference a secret only if that secret is declared at the top-level Compose scope.
+secrets:
+  postgres_password:
+    #file: ./secrets/postgres_password.txt
+    file: ./secrets/spring.datasource.password
