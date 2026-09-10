@@ -1,3 +1,7 @@
+# Using GitHub Actions to run CI on every push to main.
+# The workflow provisions PostgreSQL and MongoDB as service containers,
+# sets up Java 21 with Maven caching, and runs the project's test suite using the Maven Wrapper.
+
 name: CI
 
 # Run this workflow whenever somebody pushes code to main.
