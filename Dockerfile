@@ -6,6 +6,7 @@
 
 # When a Docker layer changes, subsequent layers are invalidated; previous cached layers can still be reused.
 
+
 # ---------- BUILD ----------
 FROM maven:3.9-eclipse-temurin-21 AS build
 
@@ -14,6 +15,7 @@ WORKDIR /app
 COPY pom.xml .
 
 # Dependency layer can be cached separately (smaller → safer → reproducible)
+# Download dependencies in a separate layer so Docker can reuse this layer when application source code changes.
 RUN mvn dependency:go-offline
 
 COPY src ./src
@@ -24,6 +26,9 @@ RUN mvn clean package -DskipTests
 # ---------- RUNTIME ----------
 # Alpine-based image can significantly reduce the base image footprint
 FROM eclipse-temurin:21-jre-alpine
+
+# This tells the container registry which GitHub repository the image comes from.
+LABEL org.opencontainers.image.source="https://github.com/rmarintech/climbing-management-sb"
 
 WORKDIR /app
 

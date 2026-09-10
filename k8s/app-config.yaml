@@ -12,3 +12,5 @@ data:
   # A ConfigMap stores non-sensitive configuration separately from the
   # container image. It can be injected into Pods as environment variables
   # or mounted as files.
+  #  ConfigMap → non-sensitive configuration
+  #  Secret    → sensitive configuration

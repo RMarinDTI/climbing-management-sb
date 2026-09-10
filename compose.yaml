@@ -33,6 +33,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    # Make container port 5432 accessible through host port 5432.
+    # This port mapping is only necessary for clients running OUTSIDE
+    # the Docker Compose network, such as Spring Boot running locally
+    # on Windows or a database client such as pgAdmin.
+    #
+    # Containers inside the same Compose network can connect directly
+    # using the service name and container port:
+    #
+    #   postgres:5432
+    #
+    # They do NOT need to use:
+    #
+    #   localhost:5432
+    ports:
+      - "5432:5432"
+      #   ↑      ↑
+      # host   container
+      #      Windows
+      #   localhost:5432
+      #       │
+      #       │ port mapping
+      #       ▼
+      #   Docker container
+      #   PostgreSQL:5432
+
+
 
   mongo:
     image: mongo:7
@@ -47,11 +73,40 @@ services:
       timeout: 5s
       retries: 5
 
+    # Make the container port 27017 accessible through the host port 27017.
+    # Containers inside the same Compose network connect using:
+    #
+    #   mongo:27017
+    #
+    # localhost inside a container refers to that same container,
+    # not to MongoDB.
+    ports:
+      - "27017:27017"
+
+
+
+
+
   app:
     # it will build climbing-management-sb-app:latest when "docker compose up -d"
     # when we build it manually, we set the tag "docker build -t climbing-management-sb:2.0 ."
     build: .
 
+
+    # Make the Spring Boot container's port 8080 accessible
+    # through the host port defined by ENV_APP_PORT.
+    #
+    # Format:
+    #   HOST_PORT:CONTAINER_PORT
+    #
+    # If ENV_APP_PORT=8080:
+    #
+    #   Windows localhost:8080
+    #          │
+    #          ▼
+    #   Docker app container:8080
+    #
+    # The application itself listens on port 8080 inside the container.
     ports:
       - "${ENV_APP_PORT}:8080"
 
