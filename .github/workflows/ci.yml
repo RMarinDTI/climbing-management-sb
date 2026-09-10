@@ -60,14 +60,18 @@ jobs:
 
       - name: Build application
         # run: means Execute this shell command on the runner.
-        # mvn test	Compile + run tests
-        # mvn package	Compile + test + create JAR
-        # mvn verify	Package + additional verification
-        # mvn install	Package + install JAR into local Maven repository
+        #   mvn test	Compile + run tests
+        #   mvn package	Compile + test + create JAR
+        #   mvn verify	Package + additional verification
+        #   mvn install	Package + install JAR into local Maven repository
         run: ./mvnw package
-        # Your project needs to have the Maven Wrapper files:
-        #   mvnw
-        #   mvnw.cmd
-        #   .mvn/
-        # But GitHub's Ubuntu runner can use:
-        #   ./mvnw test
+        # Your project needs to have the Maven Wrapper files:  mvnw   mvnw.cmd   .mvn/
+        # But GitHub's Ubuntu runner can use:  ./mvnw package
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Gives the artifact a recognizable name in GitHub Actions
+          name: climbing-management-jar
+          # Maven puts packaged JARs inside target/
+          path: target/*.jar
