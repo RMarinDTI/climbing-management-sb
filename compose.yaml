@@ -124,6 +124,8 @@ services:
         target: spring.datasource.password
 
     healthcheck:
+      # Invoke-RestMethod http://localhost:8080/actuator/health/liveness
+      # Invoke-RestMethod http://localhost:8080/actuator/health/readiness
       test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1" ]
       interval: 10s
       timeout: 5s
