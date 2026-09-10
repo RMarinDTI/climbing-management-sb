@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+
+# Kubernetes DNS resolves nginx-service to the Service.
+# Inside the cluster, applications can use:
+# http://nginx-service
+
+metadata:
+  name: nginx-service
+
+spec:
+  # The Service sends traffic to Pods with this label.
+  selector:
+    app: nginx
+
+  ports:
+    # port = port exposed by the Service
+    # targetPort = port where the container/application is listening
+    # nodePort = port exposed on the Kubernetes Node
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30080
+
+  # ClusterIP = Service is accessible only inside the cluster.
+  # NodePort = Service is also exposed through a port on each Node.
+  # type: ClusterIP
+  type: NodePort
+
+
+# Your PC
+#   │
+#   │ :30080
+#   ▼
+# Kubernetes Node
+#   │
+#   ▼
+# Service :80
+#   │
+#   ├── Pod :80
+#   └── Pod :80

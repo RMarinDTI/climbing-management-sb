@@ -1,0 +1,32 @@
+# Deployment → declares the desired state and manages application versions and replicas
+# ReplicaSet → ensures the desired number of Pods are running
+# Pod → runs one or more container(s)
+# Container → runs the actual application
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: nginx
+
+spec:
+  # The Deployment tells Kubernetes that we want 2 Pods.
+  replicas: 2
+
+  # The Deployment manages Pods matching this label.
+  selector:
+    matchLabels:
+      app: nginx
+
+  template:
+    metadata:
+      # Pods created by this Deployment receive this label.
+      labels:
+        app: nginx
+
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80

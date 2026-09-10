@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: config-test
+
+spec:
+  containers:
+    - name: config-test
+      image: alpine:latest
+
+      # envFrom = import all entries from the referenced ConfigMap
+      # and expose them as environment variables inside the container.
+      envFrom:
+        - configMapRef:
+            name: climbing-management-config
+
+      # Alternative: inject only one specific ConfigMap entry.
+      # env:
+      #   - name: LOG_LEVEL
+      #     valueFrom:
+      #       configMapKeyRef:
+      #         name: climbing-management-config
+      #         key: LOG_LEVEL
+
+      command:
+        - sh
+        - -c
+        - env | grep -E 'APP_NAME|LOG_LEVEL|SPRING_PROFILES_ACTIVE'
+
+
+# Spring Boot can automatically map environment variables
+# to application properties.
+
+# Kubernetes ConfigMap
+#       │
+#       │ envFrom
+#       ▼
+#      Pod
+#       │
+#       ▼
+#   Container environment
+#       │
+#       ▼
+#   Spring Boot

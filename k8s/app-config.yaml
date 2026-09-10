@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: climbing-management-config
+
+data:
+  SPRING_PROFILES_ACTIVE: docker
+  APP_NAME: climbing-management
+  LOG_LEVEL: INFO
+
+  # A ConfigMap stores non-sensitive configuration separately from the
+  # container image. It can be injected into Pods as environment variables
+  # or mounted as files.
