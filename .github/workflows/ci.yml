@@ -98,6 +98,7 @@ jobs:
         run: docker build \
           -t ghcr.io/${{ github.repository }}:latest \
           -t ghcr.io/${{ github.repository }}:${{ github.sha }} \
+          .
 
       - name: Push Docker image
         run: |
