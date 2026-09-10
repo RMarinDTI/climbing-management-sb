@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: climbing-management-service
+
+spec:
+  selector:
+    # The Service sends traffic to Pods with this label.
+    app: climbing-management
+
+  ports:
+    - protocol: TCP
+      # Port exposed by the Service.
+      port: 8080
+
+      # Port exposed by the application container.
+      targetPort: 8080
+
+  # ClusterIP makes the application available inside the cluster.
+  type: ClusterIP
+
+  # Kubernetes Service provides a stable internal endpoint.
+  #
+  # Service
+  # climbing-management-service:8080
+  #             │
+  #       ┌─────┴─────┐
+  #       ▼           ▼
+  #    App Pod      App Pod
+  #      :8080        :8080
+  #
+  # The Service dynamically routes traffic to Ready Pods
+  # matching the selector:
+  #     app: climbing-management

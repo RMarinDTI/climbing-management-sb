@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  # mongo → becomes the DNS name your Spring Boot Pod can resolve
+  name: mongo
+
+# Spring Boot Pod
+#      │
+#      │ mongo:27017
+#      ▼
+# ┌─────────────────┐
+# │ mongo           │  ← Kubernetes Service
+# │ ClusterIP       │
+# └────────┬────────┘
+#          │
+#          ▼
+# MongoDB Pod
+# 10.x.x.x:27017
+
+spec:
+  selector:
+    # selector: app: mongo → tells the Service which Pods receive traffic
+    app: mongo
+
+  ports:
+    - protocol: TCP
+
+      # port: 27017 → port exposed by the Service
+      port: 27017
+
+      # targetPort: 27017 → port on the MongoDB Pod
+      targetPort: 27017
+
+  # ClusterIP → makes MongoDB accessible inside the Kubernetes cluster
+  type: ClusterIP

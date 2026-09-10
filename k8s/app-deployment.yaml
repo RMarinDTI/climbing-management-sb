@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: climbing-management
+
+spec:
+  # Kubernetes should keep two application Pods running.
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: climbing-management
+
+  template:
+    metadata:
+      labels:
+        app: climbing-management
+
+    spec:
+      # The application does not need to access the Kubernetes API.
+      # Therefore, don't automatically mount a ServiceAccount token.
+      automountServiceAccountToken: false
+
+      containers:
+        - name: climbing-management
+
+          # Image published by our GitHub Actions CI pipeline.
+          image: ghcr.io/rmarintech/climbing-management-sb:latest
+
+          ports:
+            - containerPort: 8080
+
+          # Import all non-sensitive configuration
+          # from the Kubernetes ConfigMap.
+          envFrom:
+            - configMapRef:
+                name: climbing-management-config
+
+          # Explicitly activate the Docker Spring profile.
+          # This is normally already provided by the ConfigMap,
+          # but we set it explicitly here to make the Deployment
+          # configuration unambiguous.
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+
+          # The database password is NOT injected as an
+          # environment variable.
+          #
+          # Kubernetes mounts the Secret as a file instead.
+          volumeMounts:
+            - name: db-password
+              mountPath: /run/secrets
+              readOnly: true
+
+          # ---------------------------------------------
+          # STARTUP PROBE
+          # ---------------------------------------------
+          #
+          # Gives Spring Boot time to start before
+          # liveness checking becomes relevant.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 5
+
+          # ---------------------------------------------
+          # READINESS PROBE
+          # ---------------------------------------------
+          #
+          # Determines whether this Pod should receive
+          # traffic from a Kubernetes Service.
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          # ---------------------------------------------
+          # LIVENESS PROBE
+          # ---------------------------------------------
+          #
+          # Determines whether Kubernetes should restart
+          # the container.
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+      # ---------------------------------------------
+      # KUBERNETES SECRET
+      # ---------------------------------------------
+      #
+      # Take the DB_PASSWORD key from our Secret and
+      # expose it as:
+      #
+      # /run/secrets/spring.datasource.password
+      #
+      # This filename matches Spring Boot's configtree
+      # configuration in application-docker.properties.
+      volumes:
+        - name: db-password
+          secret:
+            secretName: climbing-management-secret
+
+            items:
+              - key: DB_PASSWORD
+                path: spring.datasource.password

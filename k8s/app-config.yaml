@@ -9,8 +9,17 @@ data:
   APP_NAME: climbing-management
   LOG_LEVEL: INFO
 
-  # A ConfigMap stores non-sensitive configuration separately from the
-  # container image. It can be injected into Pods as environment variables
+  # Database configuration.
+  # These values are not secrets, so they belong in a ConfigMap.
+  APP_MONGO_DB: climbing_management
+  APP_POSTGRES_USER: postgres
+  APP_POSTGRES_DB: climbing_management
+
+  # A ConfigMap stores non-sensitive configuration separately
+  # from the container image.
+  #
+  # It can be injected into Pods as environment variables
   # or mounted as files.
+
   #  ConfigMap → non-sensitive configuration
   #  Secret    → sensitive configuration
