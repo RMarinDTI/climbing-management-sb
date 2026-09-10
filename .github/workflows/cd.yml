@@ -10,13 +10,15 @@ on:
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # CD can now be blocked before the production deployment happens.
+    # (Environment configured in GitHub repository with required reviewers.)
     environment: production
     runs-on: ubuntu-latest
 
     steps:
-      - # Deployment simulation
+      # Deployment simulation
       - name: Deploy Docker image
         # head_sha identifies the exact commit that triggered that CI run.
         run: |
           echo "Deploying image:"
-          echo "ghcr.io/rmarintech/climbing-management-sb:${{ github.event.workflow_run.head_sha }}"
+          echo "ghcr.io/${{ github.repository }}:${{ github.event.workflow_run.head_sha }}"
