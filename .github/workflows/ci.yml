@@ -58,9 +58,13 @@ jobs:
           # Allows GitHub Actions to cache Maven dependencies, making subsequent builds faster.
           cache: maven
 
-      - name: Run tests
+      - name: Build application
         # run: means Execute this shell command on the runner.
-        run: ./mvnw test
+        # mvn test	Compile + run tests
+        # mvn package	Compile + test + create JAR
+        # mvn verify	Package + additional verification
+        # mvn install	Package + install JAR into local Maven repository
+        run: ./mvnw package
         # Your project needs to have the Maven Wrapper files:
         #   mvnw
         #   mvnw.cmd
