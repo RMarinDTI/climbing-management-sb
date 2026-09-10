@@ -92,8 +92,14 @@ jobs:
 
       # JAR = application artifact
       # Docker image = deployable application package
+      # Immutable image tags (github.sha) allow us to identify and deploy an exact application version,
+      # making deployments reproducible and rollbacks safer.
       - name: Build Docker image
-        run: docker build -t ghcr.io/${{ github.repository }}:latest .
+        run: docker build \
+          -t ghcr.io/${{ github.repository }}:latest \
+          -t ghcr.io/${{ github.repository }}:${{ github.sha }} \
 
       - name: Push Docker image
-        run: docker push ghcr.io/${{ github.repository }}:latest
+        run: |
+          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
