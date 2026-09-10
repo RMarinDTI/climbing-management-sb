@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - # Deployment simulation
       - name: Deploy Docker image
         # head_sha identifies the exact commit that triggered that CI run.
         run: |
