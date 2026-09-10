@@ -9,6 +9,12 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  # read repository
+  contents: read
+  # push Docker image to GHCR
+  packages: write
+
 jobs:
   build:
     # Run this job on the latest Ubuntu environment provided by GitHub
@@ -58,6 +64,13 @@ jobs:
           # Allows GitHub Actions to cache Maven dependencies, making subsequent builds faster.
           cache: maven
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build application
         # run: means Execute this shell command on the runner.
         #   mvn test	Compile + run tests
@@ -79,4 +92,7 @@ jobs:
       # JAR = application artifact
       # Docker image = deployable application package
       - name: Build Docker image
-        run: docker build -t climbing-management-sb:ci .
+        run: docker build -t ghcr.io/${{ github.repository }}:latest .
+
+      - name: Push Docker image
+        run: docker push ghcr.io/${{ github.repository }}:latest
