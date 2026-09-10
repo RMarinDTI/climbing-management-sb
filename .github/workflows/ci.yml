@@ -1,0 +1,36 @@
+name: CI
+
+# Run this workflow whenever somebody pushes code to main.
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    # Run this job on the latest Ubuntu environment provided by GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+      # Downloads your repository's code into the GitHub runner.
+      - name: Checkout repository
+        #uses: means we're using an existing GitHub Action
+        uses: actions/checkout@v4
+
+        # This installs/configures Temurin JDK 21, exactly like the Java version we're using locally.
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          # Allows GitHub Actions to cache Maven dependencies, making subsequent builds faster.
+          cache: maven
+
+      - name: Run tests
+        # run: means Execute this shell command on the runner.
+        run: ./mvnw test
+        # Your project needs to have the Maven Wrapper files:
+        #   mvnw
+        #   mvnw.cmd
+        #   .mvn/
+        # But GitHub's Ubuntu runner can use:
+        #   ./mvnw test
