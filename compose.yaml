@@ -1,13 +1,3 @@
-# docker compose up -d
-# docker compose down
-# docker compose config
-# docker compose logs app -f
-# docker compose up -d --build
-# docker compose up -d --force-recreate postgres
-# docker compose exec app sh
-# docker compose ps -a
-# docker compose exec app ls -la /run/secrets
-
 services:
 
   postgres:
