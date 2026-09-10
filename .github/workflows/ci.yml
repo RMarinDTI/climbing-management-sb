@@ -75,3 +75,8 @@ jobs:
           name: climbing-management-jar
           # Maven puts packaged JARs inside target/
           path: target/*.jar
+
+      # JAR = application artifact
+      # Docker image = deployable application package
+      - name: Build Docker image
+        run: docker build -t climbing-management-sb:ci .
