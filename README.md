@@ -2,18 +2,18 @@
 
 A backend application built with **Java 21 and Spring Boot** to manage climbing courses.
 
-The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, containerization, CI/CD, security practices, and clean layered architecture.
+The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, containerization, CI/CD, Kubernetes orchestration, security practices, and clean layered architecture.
 
 The application is being developed incrementally, introducing technologies and architectural patterns commonly used in enterprise Java applications.
 
 ---
 
-## 🚀 Tech Stack
+# 🚀 Tech Stack
 
-### Backend
+## Backend
 
 * **Java 21**
-* **Spring Boot**
+* **Spring Boot 4.1**
 * **Spring Web**
 * **Spring Data JPA**
 * **Spring Data MongoDB**
@@ -22,19 +22,19 @@ The application is being developed incrementally, introducing technologies and a
 * **Jakarta Bean Validation**
 * **SLF4J / Logging**
 
-### Databases
+## Databases
 
 * **PostgreSQL 17**
 * **MongoDB 7**
 
-### Development Tools
+## Development Tools
 
 * **Maven 3.9+**
 * **Git / GitHub**
 * **IntelliJ IDEA**
 * **Postman**
 
-### Infrastructure
+## Infrastructure
 
 * **Docker**
 * **Docker Compose**
@@ -42,8 +42,9 @@ The application is being developed incrementally, introducing technologies and a
 * **Docker Healthchecks**
 * **Docker multi-stage builds**
 * **Trivy vulnerability scanning**
+* **Kubernetes**
 
-### CI/CD
+## CI/CD
 
 * **GitHub Actions**
 * **Maven CI builds**
@@ -52,15 +53,27 @@ The application is being developed incrementally, introducing technologies and a
 * **JAR artifact publishing**
 * **GitHub Container Registry (GHCR)**
 * **Docker image build and publishing**
+* **Immutable Docker image tags**
+* **Continuous Delivery**
+* **Production deployment approval**
 
-### Planned
+## Kubernetes
 
-* Kubernetes
-* Advanced testing / Testcontainers
-* Spring Security
-* Messaging
-* Microservices
-* System design
+* **Kubernetes Deployments**
+* **Pods**
+* **ReplicaSets**
+* **Services**
+* **ClusterIP**
+* **Kubernetes DNS / service discovery**
+* **ConfigMaps**
+* **Secrets**
+* **Startup probes**
+* **Readiness probes**
+* **Liveness probes**
+* **Rolling restarts**
+* **Multiple application replicas**
+* **kubectl port-forward**
+* **EndpointSlices**
 
 ---
 
@@ -157,7 +170,7 @@ JDBC
 PostgreSQL
 ```
 
-### Derived Queries
+## Derived Queries
 
 Queries can be generated automatically from repository method names.
 
@@ -167,7 +180,7 @@ Example:
 List<CourseEntity> findByDifficulty(Difficulty difficulty);
 ```
 
-### JPQL
+## JPQL
 
 Custom queries can be written using the entity model:
 
@@ -913,7 +926,7 @@ Transaction
 
 If the transaction fails after both writes, both operations are rolled back.
 
-This demonstrates MongoDB transaction behaviour and the importance of configuring MongoDB as a replica set for transactional workloads.
+This demonstrates MongoDB transaction behavior and the importance of configuring MongoDB as a replica set for transactional workloads.
 
 ---
 
@@ -987,7 +1000,7 @@ The application exposes port `8080` to the host.
 
 ---
 
-## Dockerfile
+# Dockerfile
 
 The application uses a **multi-stage Docker build**.
 
@@ -1026,7 +1039,7 @@ The dependency layer is also separated from the source-code layer to improve Doc
 
 The container is hardened using several production-oriented practices.
 
-### Non-root user
+## Non-root user
 
 The Spring Boot application does not run as root.
 
@@ -1042,7 +1055,7 @@ The container was verified to run as:
 spring
 ```
 
-### Read-only root filesystem
+## Read-only root filesystem
 
 The application container uses:
 
@@ -1170,7 +1183,11 @@ healthcheck:
 
 The `start_period` prevents normal application startup time from immediately causing the container to become unhealthy.
 
-The project also demonstrates the distinction between:
+---
+
+# 🩺 Health Probes
+
+The project distinguishes between:
 
 ```text
 Liveness
@@ -1180,13 +1197,17 @@ Is the application alive?
 Readiness
     ↓
 Is the application ready to receive traffic?
+
+Startup
+    ↓
+Has the application finished starting?
 ```
 
-These concepts will become particularly important when the application is deployed to Kubernetes.
+These concepts are used directly by the Kubernetes deployment.
 
 ---
 
-# 🩺 Docker Troubleshooting
+# 🛠️ Docker Troubleshooting
 
 The project includes hands-on troubleshooting exercises covering:
 
@@ -1359,11 +1380,372 @@ spring.datasource.password
 
 ---
 
+# ☸️ Kubernetes
+
+The application and its database dependencies have been deployed to a local Kubernetes cluster running through **Docker Desktop Kubernetes**.
+
+The Kubernetes environment currently consists of:
+
+```text
+                    Kubernetes Cluster
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+             ▼             ▼             ▼
+       Spring Boot     PostgreSQL     MongoDB
+       Deployment      Deployment     Deployment
+          │               │             │
+       2 Pods           1 Pod          1 Pod
+          │               │             │
+          ▼               ▼             ▼
+       Service          Service       Service
+       :8080            :5432         :27017
+```
+
+---
+
+# 📦 Kubernetes Deployments
+
+The application is deployed using a Kubernetes `Deployment`.
+
+The current application configuration uses:
+
+```yaml
+replicas: 2
+```
+
+This creates two Spring Boot Pods:
+
+```text
+climbing-management
+        │
+        ├── App Pod #1
+        │
+        └── App Pod #2
+```
+
+The Deployment manages the Pods through a ReplicaSet.
+
+If an application Pod is deleted or fails, Kubernetes creates a replacement to maintain the desired replica count.
+
+This demonstrates Kubernetes **self-healing** and **desired state management**.
+
+---
+
+# 🌐 Kubernetes Services
+
+The application is exposed internally through:
+
+```text
+climbing-management-service
+```
+
+The Service uses:
+
+```yaml
+type: ClusterIP
+```
+
+and exposes:
+
+```text
+8080
+```
+
+The Service selects Pods using:
+
+```yaml
+selector:
+  app: climbing-management
+```
+
+Conceptually:
+
+```text
+Service
+climbing-management-service:8080
+            │
+      ┌─────┴─────┐
+      ▼           ▼
+   App Pod      App Pod
+     :8080        :8080
+```
+
+The Service provides a stable network endpoint while Pods remain ephemeral.
+
+Kubernetes dynamically maintains the Service's EndpointSlice based on matching and Ready Pods.
+
+---
+
+# 🔎 Kubernetes Service Discovery
+
+Kubernetes provides internal DNS-based service discovery.
+
+The Spring Boot application connects to PostgreSQL using:
+
+```text
+postgres:5432
+```
+
+and MongoDB using:
+
+```text
+mongo:27017
+```
+
+These names resolve to Kubernetes Services rather than directly to Pod IP addresses.
+
+Conceptually:
+
+```text
+Spring Boot Pod
+      │
+      ├── postgres:5432
+      │       ↓
+      │   PostgreSQL Service
+      │       ↓
+      │   PostgreSQL Pod
+      │
+      └── mongo:27017
+              ↓
+          MongoDB Service
+              ↓
+          MongoDB Pod
+```
+
+This is one of the key differences between container-level networking and Kubernetes service discovery.
+
+---
+
+# ⚙️ Kubernetes ConfigMap
+
+Non-sensitive application configuration is stored in:
+
+```text
+climbing-management-config
+```
+
+The ConfigMap contains values such as:
+
+```text
+SPRING_PROFILES_ACTIVE
+APP_NAME
+LOG_LEVEL
+APP_MONGO_DB
+APP_POSTGRES_USER
+APP_POSTGRES_DB
+```
+
+The application Deployment imports the ConfigMap using:
+
+```yaml
+envFrom:
+  - configMapRef:
+      name: climbing-management-config
+```
+
+This separates configuration from the container image.
+
+---
+
+# 🔐 Kubernetes Secrets
+
+Sensitive configuration is stored in:
+
+```text
+climbing-management-secret
+```
+
+The database password is mounted into the application Pod as a file:
+
+```text
+/run/secrets/spring.datasource.password
+```
+
+The application does not require the password to be exposed as an environment variable.
+
+The Deployment also disables automatic ServiceAccount token mounting:
+
+```yaml
+automountServiceAccountToken: false
+```
+
+because the application does not need to communicate with the Kubernetes API.
+
+This follows the principle of least privilege.
+
+---
+
+# 🩺 Kubernetes Health Probes
+
+The Spring Boot Actuator endpoints are used by Kubernetes:
+
+```text
+/actuator/health
+/actuator/health/readiness
+/actuator/health/liveness
+```
+
+The Deployment configures:
+
+### Startup probe
+
+Determines whether the application has completed startup.
+
+```text
+Startup
+   ↓
+Application initialization
+```
+
+### Readiness probe
+
+Determines whether the Pod should receive traffic.
+
+If readiness fails:
+
+```text
+Pod
+  ↓
+removed from Service endpoints
+```
+
+The container is not necessarily restarted.
+
+### Liveness probe
+
+Determines whether the container should be restarted.
+
+If liveness repeatedly fails:
+
+```text
+Liveness failure
+       ↓
+Kubernetes restarts container
+```
+
+Interview summary:
+
+> **Liveness determines whether Kubernetes should restart the container. Readiness determines whether the Pod should receive traffic. Startup probes protect slow-starting applications from being restarted by liveness before initialization has completed.**
+
+---
+
+# 🔄 Kubernetes Rolling Updates
+
+The application Deployment supports rolling updates.
+
+When a new application version is deployed, Kubernetes creates new Pods while gradually replacing the old Pods.
+
+Conceptually:
+
+```text
+Old version
+   │
+   ├── Pod A
+   └── Pod B
+        ↓
+Rolling update
+        ↓
+   ┌────┴────┐
+   ▼         ▼
+New Pod   New Pod
+```
+
+This reduces application downtime during deployments.
+
+The Deployment also maintains revision history, allowing previous versions to be restored using Kubernetes rollout commands.
+
+---
+
+# 🔌 Kubernetes Local Testing
+
+The application can be accessed locally using:
+
+```bash
+kubectl port-forward service/climbing-management-service 8080:8080
+```
+
+The request path becomes:
+
+```text
+localhost:8080
+      │
+      ▼
+kubectl port-forward
+      │
+      ▼
+Kubernetes Service
+      │
+      ├──► App Pod #1
+      │
+      └──► App Pod #2
+```
+
+Health can then be tested with:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+This is primarily a development and debugging mechanism.
+
+In a production environment, external traffic would normally enter through an ingress or gateway layer.
+
+---
+
+# 🧩 Kubernetes Database Services
+
+PostgreSQL is deployed internally as:
+
+```text
+PostgreSQL Deployment
+        ↓
+PostgreSQL Service
+        ↓
+postgres:5432
+```
+
+MongoDB is deployed internally as:
+
+```text
+MongoDB Deployment
+        ↓
+MongoDB Service
+        ↓
+mongo:27017
+```
+
+Both database Services use `ClusterIP`, keeping the databases internal to the Kubernetes cluster.
+
+---
+
 # 🔄 CI/CD with GitHub Actions
 
-The project uses **GitHub Actions** to automate the Continuous Integration pipeline.
+The project uses **GitHub Actions** to automate Continuous Integration and Continuous Delivery.
 
-The workflow is triggered automatically whenever code is pushed to the `main` branch.
+The pipeline is divided conceptually into:
+
+```text
+Continuous Integration
+        ↓
+Build + Test + Package
+        ↓
+Docker Image
+        ↓
+GHCR
+        ↓
+Continuous Delivery
+        ↓
+Deployment approval
+        ↓
+Production deployment
+```
+
+---
+
+# 🔨 Continuous Integration
+
+The CI workflow is triggered automatically when code is pushed to the `main` branch.
 
 The current pipeline performs:
 
@@ -1388,7 +1770,9 @@ Upload JAR artifact
     ↓
 Build Docker image
     ↓
-Push Docker image to GHCR
+Tag Docker image
+    ↓
+Push image to GHCR
 ```
 
 The workflow is implemented in:
@@ -1399,7 +1783,7 @@ The workflow is implemented in:
 
 ---
 
-## GitHub Actions Service Containers
+# 🧪 GitHub Actions Service Containers
 
 The CI environment provisions the external services required by the integration tests.
 
@@ -1421,13 +1805,13 @@ climbing_management
 image: mongo:8
 ```
 
-Both services include Docker healthchecks so the workflow can verify that the databases are ready before the application tests run.
+Both services are configured with healthchecks so the workflow can verify that the databases are ready before the application tests run.
 
-This is important because the GitHub-hosted runner does not have the user's local PostgreSQL or MongoDB instances.
+This is important because the GitHub-hosted runner does not use the user's local database installations.
 
 ---
 
-## Maven CI Build
+# 📦 Maven CI Build
 
 The workflow uses the Maven Wrapper:
 
@@ -1465,7 +1849,7 @@ This ensures that the application is compiled, tested and packaged during CI.
 
 ---
 
-## JAR Artifact
+# 📦 JAR Artifact
 
 After the Maven build completes, the generated JAR is uploaded as a GitHub Actions artifact.
 
@@ -1509,10 +1893,30 @@ The image repository is:
 ghcr.io/rmarintech/climbing-management-sb
 ```
 
-The current CI pipeline publishes:
+The pipeline publishes two important tags:
 
 ```text
 ghcr.io/rmarintech/climbing-management-sb:latest
+```
+
+and an immutable commit-based tag:
+
+```text
+ghcr.io/rmarintech/climbing-management-sb:<commit-sha>
+```
+
+The commit SHA tag identifies the exact source revision used to build the image.
+
+This is preferable for deployments because:
+
+```text
+latest
+  ↓
+Mutable reference
+
+commit SHA
+  ↓
+Immutable version reference
 ```
 
 The workflow authenticates to GHCR using the GitHub Actions `GITHUB_TOKEN` with package write permissions.
@@ -1532,24 +1936,88 @@ GitHub Actions
               ▼
          Docker Image
               │
+        ┌─────┴─────┐
+        ▼           ▼
+      latest     commit SHA
+        │           │
+        └─────┬─────┘
               ▼
              GHCR
-              │
-              ▼
-ghcr.io/rmarintech/climbing-management-sb
 ```
 
-This provides the foundation for the next deployment stage:
+---
+
+# 🚚 Continuous Delivery
+
+The project also demonstrates a Continuous Delivery workflow.
+
+The CD workflow runs after a successful CI workflow.
+
+Conceptually:
 
 ```text
-GitHub Actions
-      ↓
-GHCR
-      ↓
-Kubernetes
+CI succeeds
+     ↓
+CD workflow
+     ↓
+Production environment
+     ↓
+Required approval
+     ↓
+Deployment
 ```
 
-The current pipeline successfully builds and publishes the Docker image.
+The production environment uses a GitHub Actions environment with required reviewers.
+
+This demonstrates an important enterprise CI/CD concept:
+
+> **A successful build does not automatically mean that production deployment should happen without an approval or deployment policy.**
+
+The deployment also uses the immutable Docker image commit SHA so that the deployed version can be identified precisely.
+
+---
+
+# 🔄 Build Once, Deploy Many
+
+The CI/CD pipeline follows the principle:
+
+```text
+Source code
+     ↓
+Build once
+     ↓
+Test once
+     ↓
+Create artifact/image
+     ↓
+Deploy the same version
+```
+
+The Docker image is built during CI and published to GHCR.
+
+The resulting image can then be promoted through deployment environments without rebuilding the application.
+
+This reduces the risk of:
+
+```text
+Build version A
+       ↓
+Test version A
+       ↓
+Rebuild
+       ↓
+Deploy version B
+```
+
+Instead:
+
+```text
+Build version A
+       ↓
+Test version A
+       ↓
+Deploy version A
+```
 
 ---
 
@@ -1637,27 +2105,55 @@ The project is being developed progressively.
 * [x] Docker image build in CI
 * [x] GitHub Container Registry
 * [x] Docker image publishing to GHCR
+* [x] Docker image tagging strategy
+* [x] Immutable commit SHA image tags
+* [x] Continuous Delivery
+* [x] GitHub Actions production environment
+* [x] Deployment approval gate
+* [x] Kubernetes cluster
+* [x] Kubernetes Pods
+* [x] Kubernetes Deployments
+* [x] Kubernetes ReplicaSets
+* [x] Kubernetes Services
+* [x] Kubernetes ClusterIP
+* [x] Kubernetes service discovery
+* [x] Kubernetes DNS
+* [x] Kubernetes ConfigMaps
+* [x] Kubernetes Secrets
+* [x] Kubernetes startup probes
+* [x] Kubernetes readiness probes
+* [x] Kubernetes liveness probes
+* [x] Kubernetes rolling restart
+* [x] Kubernetes multiple application replicas
+* [x] Kubernetes EndpointSlices
+* [x] Kubernetes database Services
+* [x] Kubernetes local application testing
 
 ## Current
 
-* [ ] CI/CD finalization
-* [ ] Docker image tagging strategy
-* [ ] Continuous Delivery
+* [ ] Kubernetes persistent storage
+* [ ] Kubernetes PersistentVolumes / PersistentVolumeClaims
+* [ ] Kubernetes resource requests and limits
+* [ ] Kubernetes resource management
+* [ ] Kubernetes Horizontal Pod Autoscaler
+* [ ] Kubernetes Ingress / Gateway concepts
+* [ ] Kubernetes namespaces
+* [ ] Helm
 
 ## Upcoming
 
-* [ ] Kubernetes
-* [ ] Kubernetes Deployments
-* [ ] Kubernetes Services
-* [ ] Kubernetes health probes
 * [ ] Advanced REST API design
 * [ ] Spring Security
 * [ ] Unit testing
 * [ ] Integration testing
 * [ ] Testcontainers
-* [ ] Messaging
+* [ ] Event-driven architecture
+* [ ] Messaging / Kafka
 * [ ] Microservices
+* [ ] DDD
+* [ ] Hexagonal Architecture
 * [ ] System design
+* [ ] Performance and scalability
 * [ ] Senior Backend Java interview preparation
 
 ---
@@ -1675,7 +2171,7 @@ Key areas include:
 * Persistence and ORM
 * Transaction management
 * Transaction propagation
-* Rollback behaviour
+* Rollback behavior
 * Hibernate dirty checking
 * Optimistic locking
 * Pessimistic locking
@@ -1700,9 +2196,15 @@ Key areas include:
 * GitHub Actions
 * Container registries
 * Kubernetes
+* Container orchestration
+* Service discovery
+* Health probes
+* Horizontal scaling
 * Distributed systems
 * Messaging
 * Microservices
+* Domain-driven design
+* Clean architecture
 
 The project is also used as a practical learning environment for **Senior Backend Java development and technical interview preparation**.
 
@@ -1725,7 +2227,12 @@ The project is also used as a practical learning environment for **Senior Backen
 * Docker Desktop
 * Docker Compose
 
-The recommended development approach is to run the infrastructure and application through Docker Compose.
+### Kubernetes development
+
+* Docker Desktop with Kubernetes enabled
+* `kubectl`
+
+The recommended development approach is to run infrastructure and application components through Docker Compose or Kubernetes depending on the learning scenario.
 
 Clone the repository:
 
@@ -1736,7 +2243,7 @@ cd climbing-management-sb
 
 ---
 
-## Maven
+# Maven
 
 Run the test suite:
 
@@ -1753,7 +2260,7 @@ mvn clean package
 Run the application locally:
 
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
 The API will be available at:
@@ -1764,7 +2271,7 @@ http://localhost:8080
 
 ---
 
-## Docker Compose
+# Docker Compose
 
 Start the complete environment:
 
@@ -1818,6 +2325,109 @@ Expected response:
     ],
     "status": "UP"
 }
+```
+
+---
+
+# ☸️ Kubernetes
+
+Apply the application configuration:
+
+```bash
+kubectl apply -f k8s/app-config.yaml
+kubectl apply -f k8s/app-secret.yaml
+```
+
+Deploy PostgreSQL:
+
+```bash
+kubectl apply -f k8s/postgres-deployment.yaml
+kubectl apply -f k8s/postgres-service.yaml
+```
+
+Deploy MongoDB:
+
+```bash
+kubectl apply -f k8s/mongo-deployment.yaml
+kubectl apply -f k8s/mongo-service.yaml
+```
+
+Deploy the application:
+
+```bash
+kubectl apply -f k8s/app-deployment.yaml
+kubectl apply -f k8s/app-service.yaml
+```
+
+Check the cluster:
+
+```bash
+kubectl get pods
+```
+
+Expected application state:
+
+```text
+climbing-management-xxxxx   1/1   Running
+climbing-management-xxxxx   1/1   Running
+```
+
+Check Services:
+
+```bash
+kubectl get services
+```
+
+Check EndpointSlices:
+
+```bash
+kubectl get endpointslices
+```
+
+Check the application Deployment:
+
+```bash
+kubectl get deployment climbing-management
+```
+
+Check rollout status:
+
+```bash
+kubectl rollout status deployment/climbing-management
+```
+
+---
+
+## Kubernetes Local API Access
+
+Forward the Kubernetes Service to the local machine:
+
+```bash
+kubectl port-forward service/climbing-management-service 8080:8080
+```
+
+Then access:
+
+```text
+http://localhost:8080
+```
+
+Health:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+Liveness:
+
+```text
+http://localhost:8080/actuator/health/liveness
+```
+
+Readiness:
+
+```text
+http://localhost:8080/actuator/health/readiness
 ```
 
 ---
@@ -1921,11 +2531,13 @@ Interview questions
 Code cleanup
    ↓
 Git commit
+   ↓
+CI/CD validation
 ```
 
 Each major milestone is committed to Git so the repository provides a clear history of the technologies and concepts implemented.
 
-The CI pipeline now additionally validates the project automatically after every push to `main`, builds the application, produces the JAR artifact and publishes the Docker image to GHCR.
+The CI/CD pipeline additionally validates the project automatically after every push to `main`, builds the application, produces the JAR artifact, builds and publishes the Docker image to GHCR, and supports controlled Continuous Delivery.
 
 ---
 
