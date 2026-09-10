@@ -2,7 +2,7 @@
 
 A backend application built with **Java 21 and Spring Boot** to manage climbing courses.
 
-The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, containerization, security practices, and clean layered architecture.
+The project is designed as a practical **Senior Backend Java** learning and portfolio project, demonstrating modern enterprise backend development, REST APIs, persistence, transaction management, concurrency control, relational and NoSQL databases, dynamic queries, aggregation, containerization, CI/CD, security practices, and clean layered architecture.
 
 The application is being developed incrementally, introducing technologies and architectural patterns commonly used in enterprise Java applications.
 
@@ -43,9 +43,18 @@ The application is being developed incrementally, introducing technologies and a
 * **Docker multi-stage builds**
 * **Trivy vulnerability scanning**
 
+### CI/CD
+
+* **GitHub Actions**
+* **Maven CI builds**
+* **Automated tests**
+* **GitHub Actions service containers**
+* **JAR artifact publishing**
+* **GitHub Container Registry (GHCR)**
+* **Docker image build and publishing**
+
 ### Planned
 
-* GitHub Actions / CI/CD
 * Kubernetes
 * Advanced testing / Testcontainers
 * Spring Security
@@ -1350,6 +1359,200 @@ spring.datasource.password
 
 ---
 
+# 🔄 CI/CD with GitHub Actions
+
+The project uses **GitHub Actions** to automate the Continuous Integration pipeline.
+
+The workflow is triggered automatically whenever code is pushed to the `main` branch.
+
+The current pipeline performs:
+
+```text
+Git push
+    ↓
+GitHub Actions
+    ↓
+Checkout repository
+    ↓
+Set up Java 21
+    ↓
+Start PostgreSQL service
+    ↓
+Start MongoDB service
+    ↓
+Run Maven build and tests
+    ↓
+Create JAR
+    ↓
+Upload JAR artifact
+    ↓
+Build Docker image
+    ↓
+Push Docker image to GHCR
+```
+
+The workflow is implemented in:
+
+```text
+.github/workflows/ci.yml
+```
+
+---
+
+## GitHub Actions Service Containers
+
+The CI environment provisions the external services required by the integration tests.
+
+### PostgreSQL
+
+```yaml
+image: postgres:17
+```
+
+The CI database is created as:
+
+```text
+climbing_management
+```
+
+### MongoDB
+
+```yaml
+image: mongo:8
+```
+
+Both services include Docker healthchecks so the workflow can verify that the databases are ready before the application tests run.
+
+This is important because the GitHub-hosted runner does not have the user's local PostgreSQL or MongoDB instances.
+
+---
+
+## Maven CI Build
+
+The workflow uses the Maven Wrapper:
+
+```bash
+./mvnw package
+```
+
+The Maven lifecycle used by the project includes:
+
+```text
+mvn test
+    ↓
+compile + run tests
+
+mvn package
+    ↓
+compile + test + create JAR
+
+mvn verify
+    ↓
+package + additional verification
+
+mvn install
+    ↓
+package + install JAR into local Maven repository
+```
+
+The CI pipeline currently uses:
+
+```bash
+./mvnw package
+```
+
+This ensures that the application is compiled, tested and packaged during CI.
+
+---
+
+## JAR Artifact
+
+After the Maven build completes, the generated JAR is uploaded as a GitHub Actions artifact.
+
+```text
+target/*.jar
+        ↓
+GitHub Actions Artifact
+```
+
+The artifact is named:
+
+```text
+climbing-management-jar
+```
+
+This demonstrates the distinction between:
+
+```text
+JAR
+ ↓
+Application build artifact
+```
+
+and:
+
+```text
+Docker image
+ ↓
+Deployable application package
+```
+
+---
+
+# 📦 GitHub Container Registry
+
+The Docker image produced by CI is published to **GitHub Container Registry (GHCR)**.
+
+The image repository is:
+
+```text
+ghcr.io/rmarintech/climbing-management-sb
+```
+
+The current CI pipeline publishes:
+
+```text
+ghcr.io/rmarintech/climbing-management-sb:latest
+```
+
+The workflow authenticates to GHCR using the GitHub Actions `GITHUB_TOKEN` with package write permissions.
+
+Conceptually:
+
+```text
+GitHub Repository
+        │
+        ▼
+GitHub Actions
+        │
+        ├── Build
+        ├── Test
+        └── Package
+              │
+              ▼
+         Docker Image
+              │
+              ▼
+             GHCR
+              │
+              ▼
+ghcr.io/rmarintech/climbing-management-sb
+```
+
+This provides the foundation for the next deployment stage:
+
+```text
+GitHub Actions
+      ↓
+GHCR
+      ↓
+Kubernetes
+```
+
+The current pipeline successfully builds and publishes the Docker image.
+
+---
+
 # 🗺️ Roadmap
 
 The project is being developed progressively.
@@ -1427,16 +1630,22 @@ The project is being developed progressively.
 * [x] Docker DNS troubleshooting
 * [x] Trivy vulnerability scanning
 * [x] Dependency vulnerability remediation
+* [x] GitHub Actions CI
+* [x] CI service containers
+* [x] Automated Maven build and tests
+* [x] JAR artifact publishing
+* [x] Docker image build in CI
+* [x] GitHub Container Registry
+* [x] Docker image publishing to GHCR
 
 ## Current
 
-* [ ] CI/CD
-* [ ] GitHub Actions
+* [ ] CI/CD finalization
+* [ ] Docker image tagging strategy
+* [ ] Continuous Delivery
 
 ## Upcoming
 
-* [ ] Docker image publishing
-* [ ] Container registry
 * [ ] Kubernetes
 * [ ] Kubernetes Deployments
 * [ ] Kubernetes Services
@@ -1488,6 +1697,8 @@ Key areas include:
 * Healthchecks
 * Vulnerability scanning
 * CI/CD
+* GitHub Actions
+* Container registries
 * Kubernetes
 * Distributed systems
 * Messaging
@@ -1519,7 +1730,7 @@ The recommended development approach is to run the infrastructure and applicatio
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/rmarintech/climbing-management-sb.git
 cd climbing-management-sb
 ```
 
@@ -1714,7 +1925,7 @@ Git commit
 
 Each major milestone is committed to Git so the repository provides a clear history of the technologies and concepts implemented.
 
-The result is both a functional backend application and a practical **Senior Backend Java interview preparation environment**.
+The CI pipeline now additionally validates the project automatically after every push to `main`, builds the application, produces the JAR artifact and publishes the Docker image to GHCR.
 
 ---
 
@@ -1726,4 +1937,4 @@ Backend Java Developer
 
 Technologies explored in this project include:
 
-`Java` · `Spring Boot` · `Spring Data JPA` · `Hibernate` · `PostgreSQL` · `Spring Data MongoDB` · `MongoDB` · `MongoTemplate` · `Docker` · `Docker Compose` · `GitHub Actions` · `Kubernetes`
+`Java` · `Spring Boot` · `Spring Data JPA` · `Hibernate` · `PostgreSQL` · `Spring Data MongoDB` · `MongoDB` · `MongoTemplate` · `Docker` · `Docker Compose` · `GitHub Actions` · `GitHub Container Registry` · `Kubernetes`
