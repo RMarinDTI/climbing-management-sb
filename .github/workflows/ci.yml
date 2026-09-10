@@ -10,6 +10,35 @@ jobs:
     # Run this job on the latest Ubuntu environment provided by GitHub
     runs-on: ubuntu-latest
 
+    # External services required by the application tests.
+    services:
+
+      # PostgreSQL service
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: climbing_management
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: root
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d climbing_management"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # MongoDB service
+      mongodb:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # Downloads your repository's code into the GitHub runner.
       - name: Checkout repository
