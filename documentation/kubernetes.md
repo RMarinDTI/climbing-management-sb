@@ -2,8 +2,8 @@ KUBERNETES COMMANDS — CLIMBING MANAGEMENT
 ==========================================
 
 
-### 1. Kubernetes Context
-=========================
+1. KUBERNETES CONTEXT
+   =====================
 
 # Show the current Kubernetes context.
 #
@@ -18,8 +18,8 @@ kubectl config get-contexts
 kubectl config use-context <context-name>
 
 
-### 2. Cluster Information
-==========================
+2. CLUSTER INFORMATION
+   ======================
 
 # Show basic information about the Kubernetes cluster.
 kubectl cluster-info
@@ -38,8 +38,8 @@ kubectl get nodes -o wide
 kubectl describe node <node-name>
 
 
-### 3. Namespaces
-=================
+3. NAMESPACES
+   =============
 
 # List all namespaces.
 kubectl get namespaces
@@ -54,8 +54,8 @@ kubectl get pods -n <namespace>
 kubectl get deployments -n <namespace>
 
 
-### 4. Application Deployment
-============================
+4. APPLICATION DEPLOYMENT
+   =========================
 
 # Apply the Spring Boot Kubernetes Deployment.
 kubectl apply -f k8s/app-deployment.yaml
@@ -87,8 +87,8 @@ kubectl describe deployment climbing-management
 kubectl get deployment climbing-management -o yaml
 
 
-### 5. Deployment Hierarchy
-===========================
+5. DEPLOYMENT HIERARCHY
+   =======================
 
 # Kubernetes Deployments do not create Pods directly.
 #
@@ -111,8 +111,8 @@ kubectl get deployment climbing-management -o yaml
 kubectl get deployment,replicaset,pods
 
 
-### 6. Application Logs and Troubleshooting
-===========================================
+6. APPLICATION LOGS AND TROUBLESHOOTING
+   =======================================
 
 # Show the logs of a running application Pod.
 kubectl logs <pod-name>
@@ -141,8 +141,8 @@ kubectl describe pod <pod-name>
 kubectl get pod <pod-name> -o yaml
 
 
-### 7. CrashLoopBackOff Troubleshooting
-=======================================
+7. CRASHLOOPBACKOFF TROUBLESHOOTING
+   ===================================
 
 # Show the current Pod status.
 kubectl get pods
@@ -154,22 +154,12 @@ kubectl describe pod <pod-name>
 kubectl logs <pod-name>
 
 # Show logs from the previous crashed container.
-#
-# Particularly important when the container starts,
-# crashes and Kubernetes restarts it.
 kubectl logs <pod-name> --previous
 
 # Show recent Kubernetes events.
-#
-# Events are useful for diagnosing:
-#   - image pull errors
-#   - failed mounts
-#   - failed probes
-#   - scheduling problems
-#   - container startup failures
 kubectl get events --sort-by=.lastTimestamp
 
-# A useful troubleshooting sequence is:
+# Useful troubleshooting sequence:
 #
 # 1. Check Pod status
 # 2. Describe the Pod
@@ -184,8 +174,8 @@ kubectl logs <pod-name> --previous
 kubectl get events --sort-by=.lastTimestamp
 
 
-### 8. ConfigMap Verification
-============================
+8. CONFIGMAP VERIFICATION
+   =========================
 
 # Show all ConfigMaps.
 kubectl get configmaps
@@ -197,38 +187,31 @@ kubectl describe configmap climbing-management-config
 kubectl get configmap climbing-management-config -o yaml
 
 
-### 9. Secret Verification
-==========================
+9. SECRET VERIFICATION
+   ======================
 
 # List Secrets without displaying their values.
 kubectl get secrets
 
 # Show Secret metadata and available keys.
-#
-# Secret values are intentionally not displayed.
 kubectl describe secret climbing-management-secret
 
 # Show the Secret definition.
 #
-# Values stored in "data" are Base64 encoded.
+# Secret values stored in "data" are Base64 encoded.
 #
 # IMPORTANT:
 # Base64 is encoding, NOT encryption.
-#
-# Kubernetes Secrets provide a mechanism for handling
-# sensitive configuration, but production environments
-# may also require encryption at rest and appropriate
-# RBAC/access controls.
 kubectl get secret climbing-management-secret -o yaml
 
 
-### 10. Verify Configuration Inside a Pod
-=========================================
+10. VERIFY CONFIGURATION INSIDE A POD
+    =====================================
 
 # Show environment variables inside a running Pod.
 kubectl exec <pod-name> -- env
 
-# Show only application-related environment variables.
+# Show application-related environment variables.
 #
 # PowerShell syntax for Windows.
 kubectl exec <pod-name> -- env | Select-String "APP_|SPRING_|LOG_LEVEL"
@@ -240,40 +223,32 @@ kubectl exec -it <pod-name> -- sh
 exit
 
 
-### 11. Verify the Kubernetes Secret Volume
-===========================================
+11. VERIFY THE KUBERNETES SECRET VOLUME
+    =======================================
 
 # List files mounted under /run/secrets.
 kubectl exec <pod-name> -- ls -la /run/secrets
 
-# Show the Secret filenames without displaying their values.
+# Show Secret filenames without displaying their values.
 kubectl exec <pod-name> -- ls -l /run/secrets
 
 # Verify that the expected Secret file exists.
-#
-# The command only checks whether the file exists.
-# It does not display the password.
 kubectl exec <pod-name> -- test -f /run/secrets/spring.datasource.password
 
 # Return success/failure without exposing the password.
 kubectl exec <pod-name> -- sh -c "test -f /run/secrets/spring.datasource.password && echo 'Secret file exists' || echo 'Secret file missing'"
 
 
-### 12. Deployment Rollout
-==========================
+12. DEPLOYMENT ROLLOUT
+    ======================
 
 # Show the current rollout status.
-#
-# This waits until Kubernetes reports that the Deployment
-# has successfully completed its rollout.
 kubectl rollout status deployment/climbing-management
 
 # Show Deployment rollout history.
 kubectl rollout history deployment/climbing-management
 
 # Restart the Deployment.
-#
-# Kubernetes creates new Pods using the current Pod template.
 kubectl rollout restart deployment/climbing-management
 
 # Undo the latest Deployment revision.
@@ -283,38 +258,31 @@ kubectl rollout undo deployment/climbing-management
 kubectl get deployment climbing-management
 
 
-### 13. Understanding Deployment Rollouts
-=========================================
+13. UNDERSTANDING DEPLOYMENT ROLLOUTS
+    ====================================
 
 # Deployments normally use a RollingUpdate strategy.
 #
 # A rolling update gradually replaces old Pods with new Pods.
 #
-# Conceptually:
-#
 # Old Pods
-#   ↓
+#    ↓
 # New Pods are created
-#   ↓
+#    ↓
 # New Pods become Ready
-#   ↓
+#    ↓
 # Old Pods are removed
 #
 # This allows Kubernetes to maintain application availability
 # where the Deployment configuration permits it.
 
-# Check rollout status.
 kubectl rollout status deployment/climbing-management
-
-# Check rollout history.
 kubectl rollout history deployment/climbing-management
-
-# Roll back to the previous revision.
 kubectl rollout undo deployment/climbing-management
 
 
-### 14. Scaling
-==============
+14. SCALING
+    ==========
 
 # Manually scale the Deployment to three Pods.
 kubectl scale deployment climbing-management --replicas=3
@@ -325,18 +293,21 @@ kubectl get pods
 # Manually scale back to two Pods.
 kubectl scale deployment climbing-management --replicas=2
 
-# Show the desired and current replica counts.
+# Show desired and current replica counts.
 kubectl get deployment climbing-management
 
 # IMPORTANT:
 #
 # When an HPA manages the Deployment, manual scaling can
-# be overridden by the HPA according to its configured
-# minReplicas, maxReplicas and metrics.
+# be overridden by the HPA according to:
+#
+#   minReplicas
+#   maxReplicas
+#   CPU/memory metrics
 
 
-### 15. Service
-==============
+15. SERVICE
+    ==========
 
 # Apply the application Service.
 kubectl apply -f k8s/app-service.yaml
@@ -354,15 +325,16 @@ kubectl describe service climbing-management-service
 kubectl get endpointslices
 
 # Show EndpointSlices belonging to the application Service.
-kubectl get endpointslices \
--l kubernetes.io/service-name=climbing-management-service
+#
+# PowerShell: keep this command on one line.
+kubectl get endpointslices -l kubernetes.io/service-name=climbing-management-service
 
 # Show the Service definition including its selector.
 kubectl get service climbing-management-service -o yaml
 
 
-### 16. Kubernetes Service Architecture
-=======================================
+16. KUBERNETES SERVICE ARCHITECTURE
+    ===================================
 
 # A Service provides a stable network endpoint for a group of Pods.
 #
@@ -388,8 +360,6 @@ kubectl get service climbing-management-service -o yaml
 #             ▼         ▼         ▼
 #          App Pod   App Pod   App Pod
 #
-# The Service selects Pods using labels.
-#
 # Service
 #    ↓
 # selector
@@ -401,8 +371,8 @@ kubectl get service climbing-management-service -o yaml
 # Pod IPs
 
 
-### 17. Service Troubleshooting
-==============================
+17. SERVICE TROUBLESHOOTING
+    ===========================
 
 # If a Service exists but traffic does not reach any Pods,
 # first check the Service selector.
@@ -411,17 +381,18 @@ kubectl describe service climbing-management-service
 # Check the Service definition and selector.
 kubectl get service climbing-management-service -o yaml
 
-# Check the Pods and their labels.
+# Check Pods and their labels.
 kubectl get pods --show-labels
 
 # Check EndpointSlices.
 kubectl get endpointslices
 
 # Show EndpointSlices belonging to the Service.
-kubectl get endpointslices \
--l kubernetes.io/service-name=climbing-management-service
+#
+# PowerShell: keep this command on one line.
+kubectl get endpointslices -l kubernetes.io/service-name=climbing-management-service
 
-# Important diagnostic concept:
+# Important diagnostic model:
 #
 # Service
 #    │
@@ -429,7 +400,7 @@ kubectl get endpointslices \
 #    ▼
 # Pod labels
 #
-# If the selector matches the labels:
+# If the selector matches:
 #
 # Service → EndpointSlice → Pod
 #
@@ -438,41 +409,41 @@ kubectl get endpointslices \
 # Service → no endpoints
 
 
-### 18. Port Forwarding — Spring Boot
-=====================================
+18. PORT FORWARDING — SPRING BOOT
+    ================================
 
 # Temporarily expose the Kubernetes application locally.
 #
 # localhost:8080 → Kubernetes Service:8080
 kubectl port-forward service/climbing-management-service 8080:8080
 
-# Test the Spring Boot health endpoint from Windows PowerShell.
+# Test the Spring Boot health endpoint.
 Invoke-RestMethod http://localhost:8080/actuator/health
 
-# Test the liveness endpoint.
+# Test liveness.
 Invoke-RestMethod http://localhost:8080/actuator/health/liveness
 
-# Test the readiness endpoint.
+# Test readiness.
 Invoke-RestMethod http://localhost:8080/actuator/health/readiness
 
 
-### 19. Health Probes
-====================
+19. HEALTH PROBES
+    ================
 
-# Show the configured health probes in the Pod definition.
+# Show the configured health probes.
 kubectl describe pod <pod-name>
 
-# Watch Pod status while probes are being evaluated.
+# Watch Pod status.
 kubectl get pods -w
 
 # Show application logs if a probe is failing.
 kubectl logs <pod-name>
 
 
-### 20. Health Probe Concepts
-============================
+20. HEALTH PROBE CONCEPTS
+    =========================
 
-# Readiness Probe
+# READINESS PROBE
 #
 # Determines whether a Pod is ready to receive traffic.
 #
@@ -482,10 +453,10 @@ kubectl logs <pod-name>
 #       │
 #       └── Service stops sending traffic to it
 #
-# The application itself does not necessarily restart.
+# The application is NOT necessarily restarted.
 
 
-# Liveness Probe
+# LIVENESS PROBE
 #
 # Determines whether the application inside the container
 # is still functioning correctly.
@@ -495,7 +466,7 @@ kubectl logs <pod-name>
 # Kubernetes can restart the container.
 
 
-# Startup Probe
+# STARTUP PROBE
 #
 # Useful for applications that require a long startup time.
 #
@@ -503,8 +474,8 @@ kubectl logs <pod-name>
 # liveness/readiness checks become relevant.
 
 
-### 21. StorageClass
-====================
+21. STORAGECLASS
+    ===============
 
 # Show all StorageClasses.
 kubectl get storageclass
@@ -516,22 +487,18 @@ kubectl describe storageclass standard
 kubectl get storageclass standard -o yaml
 
 # Show the reclaim policy.
-#
-# Example result:
-# Delete
 kubectl get storageclass standard -o jsonpath="{.reclaimPolicy}"; echo
 
-# The relevant StorageClass configuration may look conceptually like:
+# Conceptually:
 #
-# StorageClass: standard
-# │
-# ├── provisioner: ...
-# ├── reclaimPolicy: Delete
-# └── volumeBindingMode: WaitForFirstConsumer
+# StorageClass
+#   ├── provisioner
+#   ├── reclaimPolicy
+#   └── volumeBindingMode
 
 
-### 22. PersistentVolumeClaim
-=============================
+22. PERSISTENTVOLUMECLAIM
+    =========================
 
 # Show all PersistentVolumeClaims.
 kubectl get pvc
@@ -542,15 +509,15 @@ kubectl get pvc postgres-pvc
 # Show detailed PVC information.
 kubectl describe pvc postgres-pvc
 
-# Show the PVC together with its bound PV.
+# Show PVC together with its bound PV.
 kubectl get pvc,pv
 
 # Show Pods, PVCs and PVs together.
 kubectl get pods,pvc,pv
 
 
-### 23. PersistentVolume
-========================
+23. PERSISTENTVOLUME
+    ====================
 
 # Show all PersistentVolumes.
 kubectl get pv
@@ -562,8 +529,8 @@ kubectl describe pv <pv-name>
 kubectl get pv <pv-name> -o yaml
 
 
-### 24. PostgreSQL Persistent Storage Architecture
-==================================================
+24. POSTGRESQL PERSISTENT STORAGE ARCHITECTURE
+    ==============================================
 
 # Provisioning:
 #
@@ -579,40 +546,35 @@ kubectl get pv <pv-name> -o yaml
 #
 # The Pod consumes the PVC.
 # The PVC is bound to the PV.
-# The PostgreSQL container mounts the volume.
+# PostgreSQL mounts the volume.
 
 # Complete architecture:
 #
 #             PVC
 #              │
-#              │ requests storage
 #              ▼
 #         StorageClass
 #              │
-#              │ dynamically provisions
 #              ▼
 #             PV
 #              │
-#              │ is bound to
 #              ▼
 #             PVC
 #              │
-#              │ is consumed by
 #              ▼
 #        PostgreSQL Pod
 #              │
-#              │ volumeMount
 #              ▼
 # /var/lib/postgresql/data
 
 
-### 25. PostgreSQL Deployment
-============================
+25. POSTGRESQL DEPLOYMENT
+    =========================
 
-# Apply the PostgreSQL Deployment.
+# Apply PostgreSQL Deployment.
 kubectl apply -f k8s/postgres-deployment.yaml
 
-# Show the PostgreSQL Deployment.
+# Show PostgreSQL Deployment.
 kubectl get deployment postgres
 
 # Show PostgreSQL Pods.
@@ -621,138 +583,120 @@ kubectl get pods -l app=postgres
 # Show detailed PostgreSQL Pod information.
 kubectl describe pod <postgres-pod-name>
 
-# Check the PostgreSQL Deployment rollout.
+# Check PostgreSQL rollout.
 kubectl rollout status deployment/postgres
 
-# Show PostgreSQL logs.
-kubectl logs <postgres-pod-name>
 
+26. VERIFY POSTGRESQL PVC MOUNT
+    ================================
 
-### 26. Verify PostgreSQL PVC Mount
-===================================
+# Show PostgreSQL Pod YAML.
+kubectl get pod <postgres-pod-name> -o yaml
 
-# Show detailed information about the PostgreSQL Pod.
+# Inspect the volume mounts.
 kubectl describe pod <postgres-pod-name>
 
-# Under "Mounts", verify:
+# Open a shell inside PostgreSQL.
+kubectl exec -it <postgres-pod-name> -- bash
+
+# Check the PostgreSQL data directory.
+ls -la /var/lib/postgresql/data
+
+# Exit.
+exit
+
+
+27. STORAGE VERIFICATION
+    ========================
+
+# Show storage resources.
+kubectl get pvc,pv
+
+# Show PostgreSQL Pods.
+kubectl get pods -l app=postgres
+
+# Delete the PostgreSQL Pod.
 #
-# /var/lib/postgresql/data from postgres-storage
-#
-# Under "Volumes", verify:
-#
-# postgres-storage:
-#   Type: PersistentVolumeClaim
-#   ClaimName: postgres-pvc
+# The Deployment recreates it.
+kubectl delete pod <postgres-pod-name>
+
+# Check the new Pod.
+kubectl get pods -l app=postgres
+
+# Check the PVC.
+kubectl get pvc postgres-pvc
+
+# The data should survive Pod recreation because
+# the data is stored in persistent storage rather than
+# the container filesystem.
 
 
-### 27. PostgreSQL Storage Verification
-======================================
+28. RECLAIM POLICY
+    ==================
 
-# Show Pods, PVC and PV together.
-kubectl get pods,pvc,pv
+# Show reclaim policies.
+kubectl get pv
 
-# Expected relationship:
-#
-# PostgreSQL Pod
-#      │
-#      │ uses
-#      ▼
-# postgres-pvc
-#      │
-#      │ bound to
-#      ▼
-# dynamically-created PV
-
-
-### 28. Reclaim Policy
-======================
-
-# Show the StorageClass reclaim policy.
-kubectl get storageclass standard -o jsonpath="{.reclaimPolicy}"; echo
-
-# Example:
-#
-# Delete
-#
-# The reclaimPolicy belongs to the StorageClass.
-# It is not normally configured directly in the PVC.
-#
-# Delete means that when a dynamically provisioned PV
-# is released, Kubernetes can delete the associated
-# storage resource according to the provisioner's behavior.
-#
-# This is common for local development environments.
-
-# Another possible policy is:
+# Typical policies:
 #
 # Retain
+# Delete
 #
-# Retain preserves the PV/storage resource after release
-# and requires manual handling.
+# DELETE:
+# The storage resource may be deleted when the PVC is deleted.
+#
+# RETAIN:
+# The underlying storage is preserved and requires
+# manual intervention/recovery.
 
 
-### 29. Volume Access Modes
-===========================
+29. VOLUME ACCESS MODES
+    =======================
 
+# Common access modes:
+#
 # ReadWriteOnce (RWO)
+# -------------------
+# Volume can be mounted read-write by one node.
 #
-# The volume can be mounted as read-write by workloads
-# on one node at a time.
-#
-# Suitable for our single-node local PostgreSQL setup.
-
 # ReadOnlyMany (ROX)
+# ------------------
+# Volume can be mounted read-only by multiple nodes.
 #
-# The volume can be mounted read-only by multiple nodes,
-# where supported by the underlying storage.
-
 # ReadWriteMany (RWX)
+# -------------------
+# Volume can be mounted read-write by multiple nodes.
 #
-# The volume can be mounted read-write by multiple nodes,
-# where supported by the underlying storage.
-#
-# Support depends on the storage backend.
+# Important:
+# The actual supported access modes depend on the storage
+# backend/provisioner.
 
 
-### 30. Resource Requests and Limits
-===================================
+30. RESOURCE REQUESTS AND LIMITS
+    ================================
 
-# Show resource requests and limits for the application Pods.
+# Show Pod resource configuration.
 kubectl describe pod <pod-name>
 
-# Show current resource usage.
+# Show resource information.
+kubectl get pod <pod-name> -o yaml
+
+# Concept:
 #
-# Requires Metrics Server.
-kubectl top pods
-
-# Show current resource usage for the Kubernetes node.
-kubectl top nodes
-
-
-# Resource requests:
+# requests = resources Kubernetes reserves for scheduling
 #
-# Requests tell Kubernetes the minimum resources
-# that should be available for scheduling purposes.
+# limits = maximum resources the container can consume
 #
 # Example:
 #
 # requests:
-#   cpu: "250m"
-#   memory: "512Mi"
-
-
-# Resource limits:
-#
-# Limits define the maximum resources the container
-# is allowed to consume.
-#
-# Example:
+#   cpu: 250m
+#   memory: 512Mi
 #
 # limits:
-#   cpu: "500m"
-#   memory: "1Gi"
-
-
+#   cpu: 500m
+#   memory: 1Gi
+#
 # CPU:
 #
 # 1000m = 1 CPU core
@@ -760,832 +704,1144 @@ kubectl top nodes
 # 250m  = 0.25 CPU
 
 
-# Important:
-#
-# HPA CPU utilization is calculated relative to
-# the CPU REQUEST, not the CPU LIMIT.
-#
-# Example:
-#
-# CPU request = 250m
-# HPA target  = 70%
-#
-# 250m × 70% = 175m
-#
-# Therefore, approximately 175m CPU usage per Pod
-# corresponds to the 70% HPA target.
+31. METRICS SERVER
+    ==================
 
+# Check whether Metrics Server is installed.
+kubectl get deployment metrics-server -n kube-system
 
-### 31. Metrics Server
-=====================
+# Check Metrics Server Pod.
+kubectl get pods -n kube-system -l k8s-app=metrics-server
 
-# Metrics Server provides resource usage metrics
-# to Kubernetes.
-#
-# HPA uses these metrics to make scaling decisions.
-
-
-# Install Metrics Server.
-#
-# Mainly useful for local learning clusters.
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-
-
-# Verify Metrics Server.
-kubectl get pods -n kube-system | Select-String "metrics-server"
-
-# Show resource usage for Pods.
-kubectl top pods
-
-# Show resource usage for Nodes.
+# Check node metrics.
 kubectl top nodes
 
+# Check Pod metrics.
+kubectl top pods
 
-# Local Docker Desktop note:
+# Check application Pod CPU/memory.
+kubectl top pods -l app=climbing-management
+
+# Metrics Server provides resource usage metrics to Kubernetes.
 #
-# Docker Desktop's local Kubernetes cluster may have
-# kubelet certificates that Metrics Server cannot verify.
-#
-# For local learning environments, Metrics Server may
-# need the --kubelet-insecure-tls option.
-#
-# This is NOT recommended for production.
+# HPA can consume these metrics to make scaling decisions.
 
 
-### 32. Horizontal Pod Autoscaler — HPA
-=======================================
+32. HORIZONTAL POD AUTOSCALER
+    =============================
 
-# Show the HPA.
+# Show all HPAs.
 kubectl get hpa
 
-# Show the HPA continuously.
-kubectl get hpa -w
+# Show the application HPA.
+kubectl get hpa climbing-management-hpa
 
 # Show detailed HPA information.
 kubectl describe hpa climbing-management-hpa
 
+# Show HPA YAML.
+kubectl get hpa climbing-management-hpa -o yaml
 
-# HPA automatically changes the number of Pods
-# according to observed resource utilization.
+# Example configuration:
 #
-# Our configuration:
+# minReplicas: 2
+# maxReplicas: 5
+# targetCPUUtilizationPercentage: 70
 #
-# Minimum replicas: 2
-# Maximum replicas: 5
-# CPU target:       70%
+# The HPA manages the Deployment's desired replica count.
+
+# Current CPU target:
 #
+# CPU request = 250m
+# Target = 70%
 #
-# Scaling example:
+# 250m × 70% = 175m
 #
-#       Low CPU
-#          │
-#          ▼
-#       2 Pods
-#          │
-#          │ High CPU
-#          ▼
-#    3 → 4 → 5 Pods
-#          │
-#          │ Lower demand
-#          ▼
-#    4 → 3 → 2 Pods
+# A Pod consuming around 175m CPU is at approximately
+# 70% CPU utilization relative to its request.
 
 
-# HPA architecture:
-#
-# Application Pods
-#       │
-#       │ resource usage
-#       ▼
-# Metrics Server
-#       │
-#       │ metrics
-#       ▼
-# HPA
-#       │
-#       │ desired replica count
-#       ▼
-# Deployment
-#       │
-#       ▼
-# ReplicaSet
-#       │
-#       ▼
-# Pods
+33. HPA LOAD TESTING
+    ====================
 
-
-### 33. HPA Load Testing
-========================
-
-# Create a temporary Pod for generating HTTP traffic.
-kubectl run load-generator --rm -it --restart=Never --image=busybox:1.36 -- /bin/sh
-
-
-# Generate continuous traffic against the application Service.
-while true; do wget -q -O- http://climbing-management-service:8080/actuator/health > /dev/null; done
-
-
-# In another terminal, watch the HPA.
+# Watch the HPA.
 kubectl get hpa -w
 
-
-# Watch the Pods.
+# Watch Pods.
 kubectl get pods -w
 
-
 # Watch CPU usage.
-kubectl top pods
+kubectl top pods -l app=climbing-management
 
+# Generate load from a temporary Pod.
+kubectl run load-generator `
+  --rm -it `
+--restart=Never `
+  --image=busybox `
+-- /bin/sh
+
+# From inside the temporary Pod, repeatedly call the application.
+while true; do wget -q -O- http://climbing-management-service:8080/actuator/health; done
+
+# Alternatively, use a dedicated load-testing tool/container
+# when more realistic traffic is required.
 
 # Expected behavior:
 #
-# CPU usage increases
-#       ↓
-# HPA detects utilization above target
-#       ↓
-# Desired replica count increases
-#       ↓
+# CPU increases
+#     ↓
+# HPA observes CPU usage
+#     ↓
+# desired replicas increase
+#     ↓
 # Deployment creates more Pods
-#
-#
-# After stopping the load:
-#
-# CPU usage decreases
-#       ↓
-# HPA detects lower utilization
-#       ↓
-# Desired replica count decreases
-#       ↓
-# Kubernetes removes excess Pods
+#     ↓
+# Service distributes traffic across Pods
 
 
-### 34. HPA Interview Mental Model
-==================================
+34. HPA INTERVIEW MENTAL MODEL
+    ==============================
 
-# HPA does NOT directly create Pods.
+# HPA does NOT create Pods directly.
 #
-# HPA changes the desired replica count
-# of the target workload.
-#
-# For our application:
-#
-# HPA
-#   ↓
-# Deployment replicas
-#   ↓
+# HPA:
+#     ↓
+# changes Deployment replica count
+#     ↓
+# Deployment
+#     ↓
 # ReplicaSet
-#   ↓
+#     ↓
 # Pods
-
-
-# Important interview question:
-#
-# Why does HPA use CPU requests for utilization?
-#
-# Because utilization is expressed as a percentage
-# of the requested CPU capacity.
 #
 # Example:
 #
-# Request = 250m
-# Usage  = 125m
+# Current:
+#   2 replicas
+#   CPU = 146%
+#   Target = 70%
 #
-# Utilization:
+# Approximation:
 #
-# 125m / 250m = 50%
+# desiredReplicas =
+#     currentReplicas × currentUtilization / targetUtilization
+#
+# 2 × 146 / 70 ≈ 4.17
+#
+# Kubernetes rounds according to its autoscaling algorithm
+# and respects min/max limits.
+#
+# If maxReplicas = 5:
+#
+# desired replicas cannot exceed 5.
 
 
-### 35. Dry Run
-==============
+35. DRY RUN
+    ==========
 
-# Client-side dry run.
-#
-# Kubernetes does NOT send the request to the API server.
-# kubectl validates the manifest locally.
-#
-# Useful for catching basic manifest/configuration problems
-# before applying the resource.
-kubectl apply --dry-run=client -f k8s/postgres-deployment.yaml
+# Validate a manifest without actually applying it.
+kubectl apply -f k8s/app-deployment.yaml --dry-run=client
 
-# Server-side dry run.
-#
-# The request is sent to the Kubernetes API server.
-# The API server validates the request,
-# but the resource is NOT persisted.
-#
-# This can perform validation using server-side knowledge
-# that client-side validation does not have.
-kubectl apply --dry-run=server -f k8s/postgres-deployment.yaml
+# Show what Kubernetes would create.
+kubectl apply -f k8s/app-deployment.yaml --dry-run=client -o yaml
 
-# Interview distinction:
-#
-# --dry-run=client
-#     → local validation
-#
-# --dry-run=server
-#     → API server validation without persistence
+# Useful before committing Kubernetes manifests.
 
 
-### 36. Deployment Rollout Commands — PostgreSQL
-================================================
+36. POSTGRESQL ROLLOUT
+    ======================
 
-# Check PostgreSQL Deployment rollout status.
+# Check PostgreSQL rollout.
 kubectl rollout status deployment/postgres
 
-# Show PostgreSQL Deployment rollout history.
-kubectl rollout history deployment/postgres
+# Check PostgreSQL Pod.
+kubectl get pods -l app=postgres
 
-# Roll back the PostgreSQL Deployment.
-kubectl rollout undo deployment/postgres
+# Check PostgreSQL logs.
+kubectl logs deployment/postgres
 
-
-### 37. Useful Resource Inspection Commands
-===========================================
-
-# Show a resource in table format.
-kubectl get <resource-type> <resource-name>
-
-# Show a resource with additional information.
-kubectl get <resource-type> <resource-name> -o wide
-
-# Show the complete resource definition as YAML.
-kubectl get <resource-type> <resource-name> -o yaml
-
-# Show detailed information and events for a resource.
-kubectl describe <resource-type> <resource-name>
-
-# Examples:
-kubectl describe pod <pod-name>
-kubectl describe deployment climbing-management
-kubectl describe service climbing-management-service
-kubectl describe pvc postgres-pvc
+# Describe PostgreSQL Deployment.
+kubectl describe deployment postgres
 
 
-### 38. General Diagnostic Commands
-===================================
+37. RESOURCE INSPECTION
+    =======================
 
-# Show recent Kubernetes events.
-kubectl get events --sort-by=.lastTimestamp
-
-# Show the main workload and networking resources
-# in the current namespace.
-#
-# IMPORTANT:
-# "all" does NOT literally mean every Kubernetes resource type.
-# For example, ConfigMaps, Secrets and PVCs are not necessarily
-# included.
+# Show all resources in the default namespace.
 kubectl get all
 
-# Execute a command inside a running container.
-kubectl exec <pod-name> -- <command>
+# Show resources with labels.
+kubectl get all --show-labels
 
-# Open an interactive shell inside a container.
-kubectl exec -it <pod-name> -- sh
+# Show application-related resources.
+kubectl get deployment,service,pods,configmap,secret
 
-# Follow logs continuously.
-kubectl logs -f <pod-name>
+# Show storage resources.
+kubectl get pvc,pv,storageclass
 
-# Read logs from the previous container instance.
-kubectl logs <pod-name> --previous
+# Show autoscaling resources.
+kubectl get hpa
 
 
-### 39. Useful Combined Commands
-================================
+38. GENERAL DIAGNOSTICS
+    =======================
 
-# Show Pods, PVCs and PVs together.
-kubectl get pods,pvc,pv
+# Pods.
+kubectl get pods
 
-# Show Deployment, ReplicaSet and Pods together.
-kubectl get deployment,replicaset,pods
-
-# Show Services and EndpointSlices.
-kubectl get services,endpointslices
-
-# Show all Pods with their labels.
-kubectl get pods --show-labels
-
-# Show Pods with IP addresses and nodes.
+# Pods with more information.
 kubectl get pods -o wide
 
+# Deployments.
+kubectl get deployments
 
-### 40. Cleanup — Application
-============================
+# Services.
+kubectl get services
 
-# Delete the Spring Boot Deployment.
+# EndpointSlices.
+kubectl get endpointslices
+
+# Events.
+kubectl get events --sort-by=.lastTimestamp
+
+# Resource usage.
+kubectl top pods
+kubectl top nodes
+
+# Complete overview.
+kubectl get all
+
+
+39. COMBINED COMMANDS
+    =====================
+
+# Application overview.
+kubectl get deployment,service,pods
+
+# Application + storage.
+kubectl get deployment,service,pods,pvc,pv
+
+# Application + autoscaling.
+kubectl get deployment,service,pods,hpa
+
+# Complete application overview.
+kubectl get deployment,service,pods,configmap,secret,hpa,pvc
+
+
+40. CLEANUP APPLICATION
+    =======================
+
+# Delete the application Deployment.
 kubectl delete deployment climbing-management
 
-# Delete the Spring Boot Service.
+# Delete the application Service.
 kubectl delete service climbing-management-service
 
-# Delete the application HPA.
-kubectl delete hpa climbing-management-hpa
-
-# Delete the application ConfigMap.
+# Delete application ConfigMap.
 kubectl delete configmap climbing-management-config
 
-# Delete the application Secret.
+# Delete application Secret.
 kubectl delete secret climbing-management-secret
 
+# Delete HPA.
+kubectl delete hpa climbing-management-hpa
 
-### 41. Cleanup — PostgreSQL
-============================
+# Delete application Ingress.
+kubectl delete ingress climbing-management-ingress
 
-# Delete the PostgreSQL Deployment.
+
+41. CLEANUP POSTGRESQL
+    ======================
+
+# Delete PostgreSQL Deployment.
 kubectl delete deployment postgres
 
-# Delete the PostgreSQL PVC.
-#
-# WARNING:
-# The associated PV/storage may also be deleted depending
-# on the StorageClass reclaim policy.
+# Delete PostgreSQL Service.
+kubectl delete service postgres
+
+# Delete PostgreSQL PVC.
 kubectl delete pvc postgres-pvc
 
-# Show the remaining PersistentVolumes.
-kubectl get pv
+# IMPORTANT:
+#
+# Deleting a PVC may trigger the StorageClass reclaim policy.
+#
+# If the PV uses "Delete", the underlying dynamically
+# provisioned storage may also be deleted.
 
 
-### 42. Kubernetes Architecture — Application
-=============================================
+42. KUBERNETES ARCHITECTURE — APPLICATION
+    =========================================
 
-# Complete application architecture:
+# High-level application architecture:
 #
-#
-#                  Kubernetes Cluster
-#
-#                         │
-#                         ▼
-#              ┌─────────────────────┐
-#              │ Application Service │
-#              │     ClusterIP       │
-#              └──────────┬──────────┘
-#                         │
-#                    selector
-#                         │
-#              ┌──────────┼──────────┐
-#              ▼          ▼          ▼
-#           App Pod    App Pod    App Pod
-#              │
-#              │
-#              ▼
-#       Spring Boot Container
-#
-#
-# Deployment manages the Pods:
-#
-# Deployment
-#      │
-#      ▼
-# ReplicaSet
-#      │
-#      ▼
-#    Pods
+#                  Ingress
+#                     │
+#                     ▼
+#             Ingress Controller
+#                     │
+#                     ▼
+#                Service
+#                     │
+#              EndpointSlice
+#                     │
+#          ┌──────────┼──────────┐
+#          ▼          ▼          ▼
+#        Pod        Pod        Pod
+#         │          │          │
+#         └──────────┼──────────┘
+#                    │
+#              Spring Boot
+#                 Docker
+#                 container
 
 
-### 43. Kubernetes Architecture — PostgreSQL
-============================================
+43. KUBERNETES ARCHITECTURE — POSTGRESQL
+    ========================================
 
-# PostgreSQL storage architecture:
+# PostgreSQL architecture:
 #
-#
+# Spring Boot Pods
+#       │
+#       ▼
+# PostgreSQL Service
+#       │
+#       ▼
 # PostgreSQL Pod
-#      │
-#      │ volumeMount
-#      ▼
-# postgres-storage
-#      │
-#      │ references
-#      ▼
-# postgres-pvc
-#      │
-#      │ bound to
-#      ▼
-# PersistentVolume
-#      ▲
-#      │ dynamically provisioned by
-#      │
-# StorageClass
-#
-#
-# Provisioning:
-#
-# PVC → StorageClass → PV
-#
-# Consumption:
-#
-# Pod → PVC → PV
-
-
-### 44. Kubernetes Diagnostic Mental Models
-===========================================
-
-# Deployment troubleshooting:
-#
-# Deployment
-#     ↓
-# ReplicaSet
-#     ↓
-# Pod
-#     ↓
-# Container
-#     ↓
-# Application logs
-
-
-# Service troubleshooting:
-#
-# Service
-#     ↓
-# Selector
-#     ↓
-# Pod labels
-#     ↓
-# EndpointSlice
-#     ↓
-# Pod IP
-
-
-# Storage troubleshooting:
-#
-# Pod
-#     ↓
+#       │
+#       ▼
+# PostgreSQL container
+#       │
+#       ▼
 # volumeMount
-#     ↓
-# Pod volume
-#     ↓
+#       │
+#       ▼
 # PVC
-#     ↓
+#       │
+#       ▼
 # PV
-#     ↓
-# StorageClass
+#       │
+#       ▼
+# StorageClass / storage backend
 
 
-# Pod failure troubleshooting:
+44. DIAGNOSTIC MENTAL MODELS
+    ============================
+
+# APPLICATION DOES NOT START
 #
-# Pod status
-#     ↓
-# kubectl describe pod
-#     ↓
-# kubectl logs
-#     ↓
-# kubectl logs --previous
-#     ↓
-# kubectl get events
-
-
-### 45. Most Important Kubernetes Interview Concepts
-====================================================
-
-# Deployment
-#
-# Manages the desired state of application Pods.
-# Usually manages ReplicaSets, which manage Pods.
-
-
-# ReplicaSet
-#
-# Ensures that the desired number of Pod replicas exists.
-
-
 # Pod
+#  ↓
+# describe
+#  ↓
+# logs
+#  ↓
+# previous logs
+#  ↓
+# events
+
+
+# SERVICE DOES NOT WORK
 #
-# The smallest deployable unit in Kubernetes.
-# Contains one or more containers that share networking
-# and storage context.
+# Service
+#  ↓
+# selector
+#  ↓
+# Pod labels
+#  ↓
+# EndpointSlice
+#  ↓
+# Pod IP
+#  ↓
+# application port
 
 
+# POD DOES NOT RECEIVE TRAFFIC
+#
+# readiness probe
+#  ↓
+# EndpointSlice
+#  ↓
 # Service
 #
-# Provides a stable network endpoint for a group of Pods.
-# Uses label selectors to determine which Pods receive traffic.
+# A Pod that is not Ready should not receive normal
+# Service traffic.
 
 
-# ClusterIP
+# DATABASE DATA DISAPPEARS
 #
-# The default Kubernetes Service type.
-# Makes the Service reachable from inside the cluster.
-
-
-# ConfigMap
+# Check:
 #
-# Stores non-sensitive configuration data.
-
-
-# Secret
-#
-# Stores sensitive configuration data.
-# Kubernetes Secret values in "data" are Base64 encoded,
-# which is NOT the same as encryption.
-
-
-# Readiness Probe
-#
-# Determines whether a Pod should receive traffic.
-
-
-# Liveness Probe
-#
-# Determines whether a container should be restarted
-# because the application is considered unhealthy.
-
-
-# Startup Probe
-#
-# Gives slow-starting applications time to initialize
-# before liveness/readiness checks become effective.
-
-
-# PersistentVolumeClaim
-#
-# A request for persistent storage made by a workload.
-
-
-# PersistentVolume
-#
-# Represents storage available to Kubernetes workloads.
-
-
+# Pod
+#  ↓
+# volumeMount
+#  ↓
+# PVC
+#  ↓
+# PV
+#  ↓
 # StorageClass
 #
-# Defines how storage should be dynamically provisioned.
+# The container filesystem itself is ephemeral.
 
 
-# Rolling Update
+# APPLICATION DOES NOT SCALE
 #
-# Gradually replaces old Pods with new Pods during
-# a Deployment update.
-
-
-# EndpointSlice
+# Check:
 #
-# Stores network endpoints corresponding to Pods selected
-# by a Service.
-
-
+# HPA
+#  ↓
 # Metrics Server
+#  ↓
+# Pod metrics
+#  ↓
+# resource requests
+#
+# HPA CPU utilization is calculated relative to
+# the CPU request.
+
+
+45. MOST IMPORTANT INTERVIEW CONCEPTS
+    =====================================
+
+# POD
+#
+# Smallest deployable unit in Kubernetes.
+# Usually contains one main application container.
+
+
+# DEPLOYMENT
+#
+# Manages stateless application Pods.
+# Controls desired replica count and rollout strategy.
+
+
+# REPLICASET
+#
+# Ensures the desired number of Pod replicas exists.
+# Usually managed automatically by a Deployment.
+
+
+# SERVICE
+#
+# Provides a stable network endpoint for Pods.
+
+
+# ENDPOINTSLICE
+#
+# Stores the actual network endpoints behind a Service.
+
+
+# CONFIGMAP
+#
+# Stores non-sensitive configuration.
+
+
+# SECRET
+#
+# Stores sensitive configuration.
+#
+# IMPORTANT:
+# Base64 encoding is not encryption.
+
+
+# PVC
+#
+# PersistentVolumeClaim.
+# Requests persistent storage.
+
+
+# PV
+#
+# PersistentVolume.
+# Represents persistent storage available to Kubernetes.
+
+
+# STORAGECLASS
+#
+# Defines how persistent storage can be dynamically provisioned.
+
+
+# HPA
+#
+# Horizontal Pod Autoscaler.
+# Adjusts Deployment replica count based on metrics.
+
+
+# METRICS SERVER
 #
 # Provides resource usage metrics to Kubernetes.
-# HPA can use these metrics for autoscaling decisions.
 
 
-# Horizontal Pod Autoscaler
+# INGRESS
 #
-# Automatically adjusts the number of replicas according
-# to configured resource utilization or other supported metrics.
+# Provides Layer 7 HTTP/HTTPS routing into the cluster.
 
 
-# Namespace
+# INGRESS CONTROLLER
 #
-# Provides logical isolation and organization of resources
-# inside a Kubernetes cluster.
-
-
-# kubectl
+# Actual component that implements Ingress behavior.
 #
-# Command-line client used to communicate with the
-# Kubernetes API server.
+# In this project:
+# NGINX Ingress Controller.
 
 
-### 46. Essential Interview Command Set
-=======================================
-
-# If asked for the commands you use most often,
-# these are the core ones to remember:
+46. ESSENTIAL KUBERNETES INTERVIEW COMMAND SET
+    =============================================
 
 kubectl get pods
 kubectl get pods -o wide
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
-kubectl logs <pod-name> --previous
-kubectl get events --sort-by=.lastTimestamp
+kubectl describe pod <pod>
+kubectl logs <pod>
+kubectl logs <pod> --previous
 
 kubectl get deployments
-kubectl describe deployment <deployment-name>
-kubectl rollout status deployment/<deployment-name>
-kubectl rollout history deployment/<deployment-name>
-kubectl rollout undo deployment/<deployment-name>
+kubectl describe deployment <deployment>
+kubectl rollout status deployment/<deployment>
+kubectl rollout history deployment/<deployment>
+kubectl rollout undo deployment/<deployment>
 
 kubectl get services
-kubectl describe service <service-name>
+kubectl describe service <service>
+
 kubectl get endpointslices
+kubectl get endpointslices -l kubernetes.io/service-name=<service>
 
 kubectl get configmaps
-kubectl describe configmap <configmap-name>
-
 kubectl get secrets
-kubectl describe secret <secret-name>
 
 kubectl get pvc
 kubectl get pv
 kubectl get storageclass
 
+kubectl get hpa
+kubectl describe hpa <hpa>
+
 kubectl top pods
 kubectl top nodes
-kubectl get hpa
-kubectl describe hpa <hpa-name>
 
-kubectl exec <pod-name> -- <command>
-kubectl exec -it <pod-name> -- sh
+kubectl get events --sort-by=.lastTimestamp
 
-kubectl get all
+kubectl port-forward service/<service> 8080:8080
 
-kubectl apply -f <file>
-kubectl delete -f <file>
-
-kubectl scale deployment <deployment-name> --replicas=<number>
-
-kubectl port-forward service/<service-name> <local-port>:<service-port>
+kubectl get ingress
+kubectl describe ingress <ingress>
 
 
-### 47. Core Kubernetes Mental Model
-====================================
+47. CORE KUBERNETES MENTAL MODEL
+    ================================
 
 # Kubernetes continuously compares:
 #
 # DESIRED STATE
-#      │
-#      │
-#      ▼
-# Kubernetes controllers
-#      │
-#      │ reconcile
-#      ▼
+#      vs
 # CURRENT STATE
 #
 # Example:
 #
-# Deployment says:
-# replicas: 3
+# Desired:
+#   3 replicas
 #
-# If only 2 Pods are running,
-# Kubernetes creates another Pod.
+# Current:
+#   2 replicas
 #
-# If 4 Pods are somehow running,
-# Kubernetes removes one.
+# Kubernetes detects the difference.
 #
-# Kubernetes continuously works to make
-# the actual state match the desired state.
+# Deployment / ReplicaSet creates another Pod.
+#
+# Current state becomes:
+#   3 replicas
+#
+# This reconciliation loop is one of the most important
+# concepts in Kubernetes.
 
 
-### 48. Temporary PostgreSQL Client Pod
-======================================
+48. TEMPORARY POSTGRESQL CLIENT POD
+    ===================================
 
 # Create a temporary PostgreSQL client Pod.
 #
-# kubectl run postgres-client
-#     → creates a temporary Pod
+# Useful for testing PostgreSQL Service networking
+# from inside the Kubernetes cluster.
+kubectl run postgres-client `
+  --rm -it `
+--restart=Never `
+  --image=postgres:17 `
+-- bash
+
+# Once inside the temporary Pod:
 #
-# --rm
-#     → deletes it when we exit
+# psql syntax:
 #
-# -it
-#     → gives us an interactive terminal
-#
-# --restart=Never
-#     → creates a Pod directly, not a Deployment
-#
-# --image=postgres:17
-#     → uses the PostgreSQL image
-#
-# -- bash
-#     → opens a Bash shell inside the container
+# psql -h <service-name> -U <username> -d <database>
 
-kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
+# Example:
+psql -h postgres -U postgres -d climbing_management
 
+# Exit psql:
+\q
 
-### 49. Kubernetes Service Networking Verification
-==================================================
-
-# Verify Kubernetes Service networking from inside
-# the Kubernetes cluster.
-
-
-# 1. Create a temporary PostgreSQL client Pod.
-kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
-
-
-# 2. Verify Kubernetes DNS resolves the PostgreSQL Service.
-getent hosts postgres
-
-
-# 3. Verify PostgreSQL is reachable through the Service.
-pg_isready -h postgres -p 5432
-
-
-# If pg_isready reports:
-#
-# postgres:5432 - accepting connections
-#
-# then DNS + Service routing + PostgreSQL connectivity
-# are working.
-
-
-# 4. Exit the temporary Pod.
+# Exit the container:
 exit
 
 
-# --rm automatically removes the temporary Pod.
+49. KUBERNETES SERVICE NETWORKING VERIFICATION
+    ==============================================
 
+# Start a temporary PostgreSQL client.
+kubectl run postgres-client `
+  --rm -it `
+--restart=Never `
+  --image=postgres:17 `
+-- bash
 
-### 50. Complete Kubernetes Networking Mental Model
-====================================================
+# From inside the client Pod:
+psql -h postgres -U postgres -d climbing_management
 
-# Example:
+# The important concept:
 #
-# Application Pod
+# The PostgreSQL client does NOT need the PostgreSQL Pod IP.
+#
+# It uses:
+#
+# postgres
+#    ↓
+# Kubernetes DNS
+#    ↓
+# postgres Service
+#    ↓
+# EndpointSlice
+#    ↓
+# PostgreSQL Pod
+
+
+50. COMPLETE LOCAL KUBERNETES NETWORKING MENTAL MODEL
+    =====================================================
+
+# Application request:
+#
+# Browser / curl
 #       │
-#       │ connects to
 #       ▼
-# climbing-management-service
+# Ingress
 #       │
-#       │ Kubernetes DNS
 #       ▼
-# Service ClusterIP
+# Ingress Controller
 #       │
-#       │ selector
+#       ▼
+# Service
+#       │
 #       ▼
 # EndpointSlice
 #       │
 #       ▼
-# Application Pods
-#
-#
-# For PostgreSQL:
-#
-# Application Pod
-#       │
-#       │ connects to "postgres"
-#       ▼
-# Kubernetes DNS
+# Spring Boot Pod
 #       │
 #       ▼
-# postgres Service
+# Spring Boot container
+#       │
+#       ▼
+# PostgreSQL Service
+#       │
+#       ▼
+# EndpointSlice
 #       │
 #       ▼
 # PostgreSQL Pod
+#       │
+#       ▼
+# PostgreSQL container
+#       │
+#       ▼
+# Persistent Volume
 
 
-### 51. Metrics Server and HPA — Quick Reference
-===============================================
+51. METRICS SERVER / HPA QUICK REFERENCE
+    ========================================
 
 # Metrics Server:
-#
-# Provides resource metrics.
-#
-# kubectl top pods
-# kubectl top nodes
-
+kubectl get pods -n kube-system -l k8s-app=metrics-server
+kubectl top nodes
+kubectl top pods
 
 # HPA:
+kubectl get hpa
+kubectl describe hpa climbing-management-hpa
+
+# Watch HPA:
+kubectl get hpa -w
+
+# Watch Pods:
+kubectl get pods -w
+
+# Watch CPU:
+kubectl top pods -l app=climbing-management
+
+# HPA architecture:
 #
-# Reads resource metrics and adjusts workload replicas.
-#
-# kubectl get hpa
-# kubectl get hpa -w
-# kubectl describe hpa climbing-management-hpa
+# Metrics Server
+#       │
+#       ▼
+# CPU / memory metrics
+#       │
+#       ▼
+# HPA
+#       │
+#       ▼
+# Deployment replicas
+#       │
+#       ▼
+# ReplicaSet
+#       │
+#       ▼
+# Pods
 
 
-# Our application:
-#
-# CPU request per Pod = 250m
-# HPA target            = 70%
-# Minimum replicas      = 2
-# Maximum replicas      = 5
-#
-#
-# Target CPU:
-#
-# 250m × 70% = 175m
-
-
-### 52. Kubernetes Cleanup — Complete Local Environment
-========================================================
+52. COMPLETE LOCAL CLEANUP
+    ===========================
 
 # WARNING:
 #
-# These commands delete Kubernetes resources.
-# Use them only when you intentionally want to remove
-# the local application/database environment.
-
+# These commands remove the Kubernetes resources created
+# during this course.
+#
+# Do not run them unless you intentionally want to reset
+# the local Kubernetes environment.
 
 # Application:
 kubectl delete deployment climbing-management
 kubectl delete service climbing-management-service
-kubectl delete hpa climbing-management-hpa
 kubectl delete configmap climbing-management-config
 kubectl delete secret climbing-management-secret
-
+kubectl delete hpa climbing-management-hpa
+kubectl delete ingress climbing-management-ingress
 
 # PostgreSQL:
 kubectl delete deployment postgres
+kubectl delete service postgres
 kubectl delete pvc postgres-pvc
 
-
-# MongoDB:
-kubectl delete deployment mongo
-kubectl delete service mongo
-
-
-# Check what remains:
+# Check remaining resources:
 kubectl get all
-kubectl get pvc
-kubectl get pv
+kubectl get pvc,pv
+kubectl get ingress
+kubectl get hpa
+
+
+53. INGRESS
+    ===========
+
+# Ingress provides HTTP/HTTPS routing from outside the
+# Kubernetes application layer to Services inside the cluster.
+#
+# Ingress is a Kubernetes API resource.
+#
+# IMPORTANT:
+#
+# Ingress itself does not process network traffic.
+#
+# An Ingress Controller is required to actually implement
+# the routing rules.
+#
+# In this project:
+#
+# Ingress
+#    ↓
+# NGINX Ingress Controller
+#    ↓
+# Kubernetes Service
+#    ↓
+# Spring Boot Pods
+
+
+# Check available IngressClasses.
+kubectl get ingressclass
+
+# An IngressClass identifies which Ingress Controller
+# should process an Ingress resource.
+#
+# In this project:
+#
+# ingressClassName: nginx
+
+
+# Install the NGINX Ingress Controller.
+#
+# Docker Desktop Kubernetes / local development:
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.3/deploy/static/provider/cloud/deploy.yaml
+
+
+# Check the Ingress Controller Pods.
+kubectl get pods -n ingress-nginx
+
+# Check the Ingress Controller Services.
+kubectl get svc -n ingress-nginx
+
+# Check the IngressClass.
+kubectl get ingressclass
+
+
+# Apply the application Ingress.
+kubectl apply -f k8s/app-ingress.yaml
+
+# Show Ingress resources.
+kubectl get ingress
+
+# Show detailed Ingress information.
+kubectl describe ingress climbing-management-ingress
+
+# Show the Ingress definition as YAML.
+kubectl get ingress climbing-management-ingress -o yaml
+
+
+# Current application Ingress:
+#
+# climbing-management.local
+#          │
+#          │ /
+#          ▼
+# climbing-management-service:8080
+#
+# The corresponding manifest is:
+#
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+#
+# metadata:
+#   name: climbing-management-ingress
+#
+# spec:
+#   ingressClassName: nginx
+#
+#   rules:
+#     - host: climbing-management.local
+#
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#
+#             backend:
+#               service:
+#                 name: climbing-management-service
+#                 port:
+#                   number: 8080
+
+
+# INGRESS VS SERVICE
+#
+# Service:
+#   Layer 4 networking
+#   Stable endpoint for Pods
+#   TCP/IP networking
+#   Internal service discovery
+#
+# Ingress:
+#   Layer 7 networking
+#   HTTP/HTTPS routing
+#   Host/path-based routing
+#   Routes traffic to Services
+#
+# Example:
+#
+# https://api.example.com/courses
+#                │
+#                ▼
+#             Ingress
+#                │
+#                ▼
+#       climbing-management-service
+#                │
+#                ▼
+#             Spring Boot
+
+
+# INGRESS CONTROLLER
+#
+# The Ingress Controller watches Kubernetes Ingress resources
+# and configures the actual reverse proxy/load balancer.
+#
+# In this project:
+#
+# Kubernetes Ingress
+#        │
+#        ▼
+# NGINX Ingress Controller
+#        │
+#        ▼
+# Kubernetes Service
+#
+# The NGINX Controller runs inside the ingress-nginx namespace.
+
+
+# Show the NGINX Controller.
+kubectl get pods -n ingress-nginx
+
+# Show its Service.
+kubectl get service -n ingress-nginx
+
+
+# LOCAL DOCKER DESKTOP TESTING
+#
+# Docker Desktop Kubernetes may expose the Ingress Controller
+# through an internal Docker/Kubernetes address that is not
+# directly reachable from Windows.
+#
+# For local development, kubectl port-forward can provide
+# a reliable bridge from Windows to the Ingress Controller.
+
+
+# Forward Windows localhost:8081 to the NGINX HTTP port.
+kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8081:80
+
+
+# In another PowerShell terminal:
+#
+# The Host header is important because the Ingress rule uses:
+#
+# climbing-management.local
+#
+# Therefore the request must contain that Host header.
+curl.exe -H "Host: climbing-management.local" http://localhost:8081/actuator/health
+
+
+# Expected response:
+#
+# {"status":"UP"}
+#
+# This verifies the complete path:
+#
+# Windows
+#    │
+#    ▼
+# localhost:8081
+#    │
+#    │ kubectl port-forward
+#    ▼
+# ingress-nginx-controller Service
+#    │
+#    ▼
+# NGINX Ingress Controller
+#    │
+#    ▼
+# climbing-management-ingress
+#    │
+#    ▼
+# climbing-management-service:8080
+#    │
+#    ▼
+# Spring Boot Pod
+#    │
+#    ▼
+# /actuator/health
+
+
+# TEST INGRESS FROM INSIDE KUBERNETES
+#
+# Start a temporary curl Pod.
+kubectl run curl-test `
+  --rm -it `
+--restart=Never `
+  --image=curlimages/curl:8.10.1 `
+-- sh
+
+
+# From inside the curl Pod:
+curl -v -H "Host: climbing-management.local" http://ingress-nginx-controller.ingress-nginx.svc.cluster.local/actuator/health
+
+
+# The request path is:
+#
+# curl-test Pod
+#      │
+#      ▼
+# ingress-nginx-controller.ingress-nginx.svc.cluster.local
+#      │
+#      ▼
+# NGINX Ingress Controller
+#      │
+#      ▼
+# Ingress rule
+#      │
+#      ▼
+# climbing-management-service
+#      │
+#      ▼
+# Spring Boot Pod
+
+
+# Exit the temporary curl Pod.
+exit
+
+
+# INGRESS TROUBLESHOOTING
+#
+# 1. Check the Ingress resource.
+kubectl get ingress
+kubectl describe ingress climbing-management-ingress
+
+# 2. Check the IngressClass.
+kubectl get ingressclass
+
+# 3. Check the Ingress Controller Pods.
+kubectl get pods -n ingress-nginx
+
+# 4. Check the Ingress Controller Service.
+kubectl get svc -n ingress-nginx
+
+# 5. Check application Service.
+kubectl get service climbing-management-service
+
+# 6. Check EndpointSlices.
+kubectl get endpointslices -l kubernetes.io/service-name=climbing-management-service
+
+# 7. Check application Pods.
+kubectl get pods
+
+# 8. Check NGINX Controller logs.
+kubectl logs -n ingress-nginx deployment/ingress-nginx-controller
+
+# 9. Check application logs.
+kubectl logs <application-pod>
+
+
+# IMPORTANT INGRESS INTERVIEW MENTAL MODEL
+#
+# Ingress is a routing rule.
+#
+# Ingress Controller is the component that implements
+# that routing.
+#
+# Service provides stable access to Pods.
+#
+# EndpointSlice contains the actual Pod endpoints.
+#
+# Therefore:
+#
+# Client
+#   ↓
+# Ingress Controller
+#   ↓
+# Ingress rule
+#   ↓
+# Service
+#   ↓
+# EndpointSlice
+#   ↓
+# Pod
+
+
+# INGRESS VS GATEWAY API
+#
+# Ingress:
+#   - Older Kubernetes HTTP routing API
+#   - Simple and widely supported
+#   - Host/path routing
+#
+# Gateway API:
+#   - Newer Kubernetes networking API
+#   - More expressive and extensible
+#   - Separates infrastructure concerns from routing rules
+#   - Supports richer traffic management
+#
+# Interview answer:
+#
+# "Ingress is the traditional Kubernetes API for HTTP/HTTPS
+# routing into the cluster. Gateway API is the newer and more
+# expressive successor designed to support more advanced
+# traffic-management use cases."
+
+
+# LOCAL DEVELOPMENT NOTE
+#
+# kubectl port-forward is only a development/testing mechanism.
+#
+# It is NOT normally used as a production ingress architecture.
+#
+# Production traffic would typically look more like:
+#
+# Internet
+#    ↓
+# Cloud Load Balancer
+#    ↓
+# Ingress Controller
+#    ↓
+# Ingress / Gateway
+#    ↓
+# Service
+#    ↓
+# Pods
+
+
+# FINAL KUBERNETES NETWORKING ARCHITECTURE
+#
+#                         INTERNET / CLIENT
+#                                │
+#                                ▼
+#                       Load Balancer / Ingress
+#                                │
+#                                ▼
+#                    NGINX Ingress Controller
+#                                │
+#                                ▼
+#                         Ingress Rule
+#                                │
+#                                ▼
+#                    climbing-management-service
+#                                │
+#                                ▼
+#                          EndpointSlice
+#                                │
+#                 ┌──────────────┼──────────────┐
+#                 ▼              ▼              ▼
+#              Pod 1           Pod 2           Pod 3
+#                 │              │              │
+#                 └──────────────┼──────────────┘
+#                                │
+#                         Spring Boot
+#                                │
+#                                ▼
+#                       PostgreSQL Service
+#                                │
+#                                ▼
+#                          EndpointSlice
+#                                │
+#                                ▼
+#                         PostgreSQL Pod
+#                                │
+#                                ▼
+#                            PVC / PV
+#                                │
+#                                ▼
+#                       Persistent Storage
+
+
+# END OF KUBERNETES COMMAND REFERENCE
+#
+# Topics covered:
+#
+# Kubernetes cluster/context
+# Nodes
+# Namespaces
+# Pods
+# Deployments
+# ReplicaSets
+# Services
+# EndpointSlices
+# ConfigMaps
+# Secrets
+# Health probes
+# Rollouts
+# Scaling
+# PersistentVolumes
+# PersistentVolumeClaims
+# StorageClasses
+# Resource requests/limits
+# Metrics Server
+# HPA
+# Ingress
+# NGINX Ingress Controller
+# Kubernetes networking
+# Persistent PostgreSQL
+# Troubleshooting
+# Kubernetes interview mental models
