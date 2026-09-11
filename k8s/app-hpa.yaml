@@ -1,0 +1,94 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: climbing-management-hpa
+
+spec:
+  # ---------------------------------------------
+  # TARGET DEPLOYMENT
+  # ---------------------------------------------
+  #
+  # The Deployment that Kubernetes will scale.
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: climbing-management
+
+  # ---------------------------------------------
+  # REPLICA LIMITS
+  # ---------------------------------------------
+  #
+  # HPA will never scale below 2 Pods.
+  minReplicas: 2
+
+  # HPA will never scale above 5 Pods.
+  maxReplicas: 5
+
+  # ---------------------------------------------
+  # SCALING METRICS
+  # ---------------------------------------------
+  #
+  # Scale according to CPU utilization.
+  #
+  # The percentage is calculated against the CPU REQUEST:
+  #
+  # CPU request = 250m
+  # Target = 70%
+  # 250m × 70% = 175m
+  #
+  # Therefore, approximately 175m CPU per Pod
+  # represents the 70% utilization target.
+  #
+  # If the average CPU usage goes significantly above
+  # this target, HPA can increase the number of replicas.
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+# ---------------------------------------------
+# HPA SCALING FLOW
+# ---------------------------------------------
+#
+# Application Pods
+#       │
+#       │ CPU / Memory usage
+#       ▼
+# Metrics Server
+#       │
+#       │ Resource metrics
+#       ▼
+# HPA
+#       │
+#       │ Calculates desired number of replicas
+#       ▼
+# Deployment
+#       │
+#       ▼
+# ReplicaSet
+#       │
+#       ▼
+# Application Pods
+#
+# ---------------------------------------------
+# SCALING EXAMPLE
+# ---------------------------------------------
+#
+# Low CPU usage
+#       ↓
+# 2 Pods
+#
+# High CPU usage
+#       ↓
+# 2 → 3 → 4 → 5 Pods
+#
+# Lower demand again
+#       ↓
+# 5 → 4 → 3 → 2 Pods
+#
+# HPA automatically adjusts the number of replicas
+# according to the observed resource utilization.

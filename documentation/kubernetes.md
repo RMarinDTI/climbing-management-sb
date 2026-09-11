@@ -316,17 +316,23 @@ kubectl rollout undo deployment/climbing-management
 ### 14. Scaling
 ==============
 
-# Scale the Deployment to three Pods.
+# Manually scale the Deployment to three Pods.
 kubectl scale deployment climbing-management --replicas=3
 
 # Check the number of Pods.
 kubectl get pods
 
-# Scale back to two Pods.
+# Manually scale back to two Pods.
 kubectl scale deployment climbing-management --replicas=2
 
 # Show the desired and current replica counts.
 kubectl get deployment climbing-management
+
+# IMPORTANT:
+#
+# When an HPA manages the Deployment, manual scaling can
+# be overridden by the HPA according to its configured
+# minReplicas, maxReplicas and metrics.
 
 
 ### 15. Service
@@ -478,6 +484,7 @@ kubectl logs <pod-name>
 #
 # The application itself does not necessarily restart.
 
+
 # Liveness Probe
 #
 # Determines whether the application inside the container
@@ -486,6 +493,7 @@ kubectl logs <pod-name>
 # If liveness repeatedly fails:
 #
 # Kubernetes can restart the container.
+
 
 # Startup Probe
 #
@@ -499,9 +507,6 @@ kubectl logs <pod-name>
 ====================
 
 # Show all StorageClasses.
-kubectl get storageclass
-
-# Show the default StorageClass.
 kubectl get storageclass
 
 # Show detailed information about the standard StorageClass.
@@ -709,7 +714,248 @@ kubectl get storageclass standard -o jsonpath="{.reclaimPolicy}"; echo
 # Support depends on the storage backend.
 
 
-### 30. Dry Run
+### 30. Resource Requests and Limits
+===================================
+
+# Show resource requests and limits for the application Pods.
+kubectl describe pod <pod-name>
+
+# Show current resource usage.
+#
+# Requires Metrics Server.
+kubectl top pods
+
+# Show current resource usage for the Kubernetes node.
+kubectl top nodes
+
+
+# Resource requests:
+#
+# Requests tell Kubernetes the minimum resources
+# that should be available for scheduling purposes.
+#
+# Example:
+#
+# requests:
+#   cpu: "250m"
+#   memory: "512Mi"
+
+
+# Resource limits:
+#
+# Limits define the maximum resources the container
+# is allowed to consume.
+#
+# Example:
+#
+# limits:
+#   cpu: "500m"
+#   memory: "1Gi"
+
+
+# CPU:
+#
+# 1000m = 1 CPU core
+# 500m  = 0.5 CPU
+# 250m  = 0.25 CPU
+
+
+# Important:
+#
+# HPA CPU utilization is calculated relative to
+# the CPU REQUEST, not the CPU LIMIT.
+#
+# Example:
+#
+# CPU request = 250m
+# HPA target  = 70%
+#
+# 250m × 70% = 175m
+#
+# Therefore, approximately 175m CPU usage per Pod
+# corresponds to the 70% HPA target.
+
+
+### 31. Metrics Server
+=====================
+
+# Metrics Server provides resource usage metrics
+# to Kubernetes.
+#
+# HPA uses these metrics to make scaling decisions.
+
+
+# Install Metrics Server.
+#
+# Mainly useful for local learning clusters.
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+
+# Verify Metrics Server.
+kubectl get pods -n kube-system | Select-String "metrics-server"
+
+# Show resource usage for Pods.
+kubectl top pods
+
+# Show resource usage for Nodes.
+kubectl top nodes
+
+
+# Local Docker Desktop note:
+#
+# Docker Desktop's local Kubernetes cluster may have
+# kubelet certificates that Metrics Server cannot verify.
+#
+# For local learning environments, Metrics Server may
+# need the --kubelet-insecure-tls option.
+#
+# This is NOT recommended for production.
+
+
+### 32. Horizontal Pod Autoscaler — HPA
+=======================================
+
+# Show the HPA.
+kubectl get hpa
+
+# Show the HPA continuously.
+kubectl get hpa -w
+
+# Show detailed HPA information.
+kubectl describe hpa climbing-management-hpa
+
+
+# HPA automatically changes the number of Pods
+# according to observed resource utilization.
+#
+# Our configuration:
+#
+# Minimum replicas: 2
+# Maximum replicas: 5
+# CPU target:       70%
+#
+#
+# Scaling example:
+#
+#       Low CPU
+#          │
+#          ▼
+#       2 Pods
+#          │
+#          │ High CPU
+#          ▼
+#    3 → 4 → 5 Pods
+#          │
+#          │ Lower demand
+#          ▼
+#    4 → 3 → 2 Pods
+
+
+# HPA architecture:
+#
+# Application Pods
+#       │
+#       │ resource usage
+#       ▼
+# Metrics Server
+#       │
+#       │ metrics
+#       ▼
+# HPA
+#       │
+#       │ desired replica count
+#       ▼
+# Deployment
+#       │
+#       ▼
+# ReplicaSet
+#       │
+#       ▼
+# Pods
+
+
+### 33. HPA Load Testing
+========================
+
+# Create a temporary Pod for generating HTTP traffic.
+kubectl run load-generator --rm -it --restart=Never --image=busybox:1.36 -- /bin/sh
+
+
+# Generate continuous traffic against the application Service.
+while true; do wget -q -O- http://climbing-management-service:8080/actuator/health > /dev/null; done
+
+
+# In another terminal, watch the HPA.
+kubectl get hpa -w
+
+
+# Watch the Pods.
+kubectl get pods -w
+
+
+# Watch CPU usage.
+kubectl top pods
+
+
+# Expected behavior:
+#
+# CPU usage increases
+#       ↓
+# HPA detects utilization above target
+#       ↓
+# Desired replica count increases
+#       ↓
+# Deployment creates more Pods
+#
+#
+# After stopping the load:
+#
+# CPU usage decreases
+#       ↓
+# HPA detects lower utilization
+#       ↓
+# Desired replica count decreases
+#       ↓
+# Kubernetes removes excess Pods
+
+
+### 34. HPA Interview Mental Model
+==================================
+
+# HPA does NOT directly create Pods.
+#
+# HPA changes the desired replica count
+# of the target workload.
+#
+# For our application:
+#
+# HPA
+#   ↓
+# Deployment replicas
+#   ↓
+# ReplicaSet
+#   ↓
+# Pods
+
+
+# Important interview question:
+#
+# Why does HPA use CPU requests for utilization?
+#
+# Because utilization is expressed as a percentage
+# of the requested CPU capacity.
+#
+# Example:
+#
+# Request = 250m
+# Usage  = 125m
+#
+# Utilization:
+#
+# 125m / 250m = 50%
+
+
+### 35. Dry Run
 ==============
 
 # Client-side dry run.
@@ -740,7 +986,7 @@ kubectl apply --dry-run=server -f k8s/postgres-deployment.yaml
 #     → API server validation without persistence
 
 
-### 31. Deployment Rollout Commands — PostgreSQL
+### 36. Deployment Rollout Commands — PostgreSQL
 ================================================
 
 # Check PostgreSQL Deployment rollout status.
@@ -753,7 +999,7 @@ kubectl rollout history deployment/postgres
 kubectl rollout undo deployment/postgres
 
 
-### 32. Useful Resource Inspection Commands
+### 37. Useful Resource Inspection Commands
 ===========================================
 
 # Show a resource in table format.
@@ -775,7 +1021,7 @@ kubectl describe service climbing-management-service
 kubectl describe pvc postgres-pvc
 
 
-### 33. General Diagnostic Commands
+### 38. General Diagnostic Commands
 ===================================
 
 # Show recent Kubernetes events.
@@ -803,7 +1049,7 @@ kubectl logs -f <pod-name>
 kubectl logs <pod-name> --previous
 
 
-### 34. Useful Combined Commands
+### 39. Useful Combined Commands
 ================================
 
 # Show Pods, PVCs and PVs together.
@@ -822,7 +1068,7 @@ kubectl get pods --show-labels
 kubectl get pods -o wide
 
 
-### 35. Cleanup — Application
+### 40. Cleanup — Application
 ============================
 
 # Delete the Spring Boot Deployment.
@@ -831,6 +1077,9 @@ kubectl delete deployment climbing-management
 # Delete the Spring Boot Service.
 kubectl delete service climbing-management-service
 
+# Delete the application HPA.
+kubectl delete hpa climbing-management-hpa
+
 # Delete the application ConfigMap.
 kubectl delete configmap climbing-management-config
 
@@ -838,7 +1087,7 @@ kubectl delete configmap climbing-management-config
 kubectl delete secret climbing-management-secret
 
 
-### 36. Cleanup — PostgreSQL
+### 41. Cleanup — PostgreSQL
 ============================
 
 # Delete the PostgreSQL Deployment.
@@ -855,7 +1104,7 @@ kubectl delete pvc postgres-pvc
 kubectl get pv
 
 
-### 37. Kubernetes Architecture — Application
+### 42. Kubernetes Architecture — Application
 =============================================
 
 # Complete application architecture:
@@ -892,7 +1141,7 @@ kubectl get pv
 #    Pods
 
 
-### 38. Kubernetes Architecture — PostgreSQL
+### 43. Kubernetes Architecture — PostgreSQL
 ============================================
 
 # PostgreSQL storage architecture:
@@ -926,7 +1175,7 @@ kubectl get pv
 # Pod → PVC → PV
 
 
-### 39. Kubernetes Diagnostic Mental Models
+### 44. Kubernetes Diagnostic Mental Models
 ===========================================
 
 # Deployment troubleshooting:
@@ -983,7 +1232,7 @@ kubectl get pv
 # kubectl get events
 
 
-### 40. Most Important Kubernetes Interview Concepts
+### 45. Most Important Kubernetes Interview Concepts
 ====================================================
 
 # Deployment
@@ -1039,6 +1288,12 @@ kubectl get pv
 # because the application is considered unhealthy.
 
 
+# Startup Probe
+#
+# Gives slow-starting applications time to initialize
+# before liveness/readiness checks become effective.
+
+
 # PersistentVolumeClaim
 #
 # A request for persistent storage made by a workload.
@@ -1066,6 +1321,18 @@ kubectl get pv
 # by a Service.
 
 
+# Metrics Server
+#
+# Provides resource usage metrics to Kubernetes.
+# HPA can use these metrics for autoscaling decisions.
+
+
+# Horizontal Pod Autoscaler
+#
+# Automatically adjusts the number of replicas according
+# to configured resource utilization or other supported metrics.
+
+
 # Namespace
 #
 # Provides logical isolation and organization of resources
@@ -1078,7 +1345,7 @@ kubectl get pv
 # Kubernetes API server.
 
 
-### 41. Essential Interview Command Set
+### 46. Essential Interview Command Set
 =======================================
 
 # If asked for the commands you use most often,
@@ -1111,6 +1378,11 @@ kubectl get pvc
 kubectl get pv
 kubectl get storageclass
 
+kubectl top pods
+kubectl top nodes
+kubectl get hpa
+kubectl describe hpa <hpa-name>
+
 kubectl exec <pod-name> -- <command>
 kubectl exec -it <pod-name> -- sh
 
@@ -1124,7 +1396,7 @@ kubectl scale deployment <deployment-name> --replicas=<number>
 kubectl port-forward service/<service-name> <local-port>:<service-port>
 
 
-### 42. Core Kubernetes Mental Model
+### 47. Core Kubernetes Mental Model
 ====================================
 
 # Kubernetes continuously compares:
@@ -1154,33 +1426,166 @@ kubectl port-forward service/<service-name> <local-port>:<service-port>
 # the actual state match the desired state.
 
 
-kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
-# kubectl run postgres-client → creates a temporary Pod.
-# --rm → deletes it when we exit.
-# -it → gives us an interactive terminal.
-# --restart=Never → creates a Pod directly, not a Deployment.
-# --image=postgres:17 → uses the PostgreSQL image.
-# -- bash → opens a Bash shell inside the container.
+### 48. Temporary PostgreSQL Client Pod
+======================================
 
-
-# Verify Kubernetes Service networking from inside the cluster:
+# Create a temporary PostgreSQL client Pod.
 #
-# 1. Create a temporary PostgreSQL client Pod:
+# kubectl run postgres-client
+#     → creates a temporary Pod
+#
+# --rm
+#     → deletes it when we exit
+#
+# -it
+#     → gives us an interactive terminal
+#
+# --restart=Never
+#     → creates a Pod directly, not a Deployment
+#
+# --image=postgres:17
+#     → uses the PostgreSQL image
+#
+# -- bash
+#     → opens a Bash shell inside the container
+
 kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
 
-# 2. Verify Kubernetes DNS resolves the Service:
+
+### 49. Kubernetes Service Networking Verification
+==================================================
+
+# Verify Kubernetes Service networking from inside
+# the Kubernetes cluster.
+
+
+# 1. Create a temporary PostgreSQL client Pod.
+kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
+
+
+# 2. Verify Kubernetes DNS resolves the PostgreSQL Service.
 getent hosts postgres
 
-# 3. Verify PostgreSQL is reachable through the Service:
+
+# 3. Verify PostgreSQL is reachable through the Service.
 pg_isready -h postgres -p 5432
+
 
 # If pg_isready reports:
 #
 # postgres:5432 - accepting connections
 #
-# then DNS + Service routing + PostgreSQL connectivity are working.
-#
-# 4. Exit the temporary Pod:
+# then DNS + Service routing + PostgreSQL connectivity
+# are working.
+
+
+# 4. Exit the temporary Pod.
 exit
-#
+
+
 # --rm automatically removes the temporary Pod.
+
+
+### 50. Complete Kubernetes Networking Mental Model
+====================================================
+
+# Example:
+#
+# Application Pod
+#       │
+#       │ connects to
+#       ▼
+# climbing-management-service
+#       │
+#       │ Kubernetes DNS
+#       ▼
+# Service ClusterIP
+#       │
+#       │ selector
+#       ▼
+# EndpointSlice
+#       │
+#       ▼
+# Application Pods
+#
+#
+# For PostgreSQL:
+#
+# Application Pod
+#       │
+#       │ connects to "postgres"
+#       ▼
+# Kubernetes DNS
+#       │
+#       ▼
+# postgres Service
+#       │
+#       ▼
+# PostgreSQL Pod
+
+
+### 51. Metrics Server and HPA — Quick Reference
+===============================================
+
+# Metrics Server:
+#
+# Provides resource metrics.
+#
+# kubectl top pods
+# kubectl top nodes
+
+
+# HPA:
+#
+# Reads resource metrics and adjusts workload replicas.
+#
+# kubectl get hpa
+# kubectl get hpa -w
+# kubectl describe hpa climbing-management-hpa
+
+
+# Our application:
+#
+# CPU request per Pod = 250m
+# HPA target            = 70%
+# Minimum replicas      = 2
+# Maximum replicas      = 5
+#
+#
+# Target CPU:
+#
+# 250m × 70% = 175m
+
+
+### 52. Kubernetes Cleanup — Complete Local Environment
+========================================================
+
+# WARNING:
+#
+# These commands delete Kubernetes resources.
+# Use them only when you intentionally want to remove
+# the local application/database environment.
+
+
+# Application:
+kubectl delete deployment climbing-management
+kubectl delete service climbing-management-service
+kubectl delete hpa climbing-management-hpa
+kubectl delete configmap climbing-management-config
+kubectl delete secret climbing-management-secret
+
+
+# PostgreSQL:
+kubectl delete deployment postgres
+kubectl delete pvc postgres-pvc
+
+
+# MongoDB:
+kubectl delete deployment mongo
+kubectl delete service mongo
+
+
+# Check what remains:
+kubectl get all
+kubectl get pvc
+kubectl get pv

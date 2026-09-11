@@ -5,7 +5,10 @@ metadata:
   name: climbing-management
 
 spec:
-  # Kubernetes should keep two application Pods running.
+  # Initial number of application Pods.
+  #
+  # The HPA can dynamically change the number of replicas
+  # between minReplicas (2) and maxReplicas (5).
   replicas: 2
 
   selector:
@@ -15,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        app: climbing-management           # ← Pod definition starts here
+        app: climbing-management
 
     spec:
       # The application does not need to access the Kubernetes API.
@@ -45,6 +48,41 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: docker
 
+          # ---------------------------------------------
+          # RESOURCE REQUESTS & LIMITS
+          # ---------------------------------------------
+          #
+          # Resource requests and limits are important for both
+          # Kubernetes scheduling and Horizontal Pod Autoscaling.
+          #
+          # Requests:
+          # - Used by the scheduler to determine where the Pod can run.
+          # - Used by HPA as the baseline for CPU utilization.
+          #
+          # Limits:
+          # - Define the maximum CPU/memory the container can consume.
+          #
+          # With 2 replicas:
+          # CPU request:    2 × 250m  = 500m total
+          # Memory request: 2 × 512Mi = 1Gi total
+          #
+          # HPA target:
+          # 250m × 70% = 175m CPU per Pod
+          resources:
+            requests:
+              # Request → used for scheduling and HPA utilization calculation.
+              cpu: "250m"
+              memory: "512Mi"
+
+            limits:
+              # Limit → maximum CPU/memory the container can consume.
+              cpu: "500m"
+              memory: "1Gi"
+
+          # ---------------------------------------------
+          # DATABASE PASSWORD SECRET
+          # ---------------------------------------------
+          #
           # The database password is NOT injected as an
           # environment variable.
           #
@@ -60,6 +98,9 @@ spec:
           #
           # Gives Spring Boot time to start before
           # liveness checking becomes relevant.
+          #
+          # 30 failures × 5 seconds = approximately
+          # 150 seconds of startup tolerance.
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -73,6 +114,9 @@ spec:
           #
           # Determines whether this Pod should receive
           # traffic from a Kubernetes Service.
+          #
+          # If readiness fails, Kubernetes removes the Pod
+          # from the Service's traffic endpoints.
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -87,6 +131,9 @@ spec:
           #
           # Determines whether Kubernetes should restart
           # the container.
+          #
+          # If liveness repeatedly fails, Kubernetes
+          # restarts the container.
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
