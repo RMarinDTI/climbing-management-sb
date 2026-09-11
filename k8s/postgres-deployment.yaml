@@ -1,3 +1,8 @@
+
+# Deployment defines a Pod template
+# → ReplicaSet creates the Pod
+# → Pod runs the PostgreSQL container
+# → Service finds the Pod through its app=postgres label.
 apiVersion: apps/v1
 kind: Deployment
 
@@ -11,12 +16,12 @@ spec:
     matchLabels:
       app: postgres
 
-  template:
+  template:                # ← Pod definition starts here
     metadata:
       labels:
         app: postgres
 
-    spec:
+    spec:                   # ← Pod specification
       containers:
         - name: postgres
           image: postgres:17
@@ -88,3 +93,36 @@ spec:
 #         │ dynamically provisions
 #         ▼
 #   PersistentVolume
+
+
+
+# Kubernetes architecture:
+#
+# Deployment
+#     │
+#     │ manages
+#     ▼
+# ReplicaSet
+#     │
+#     │ creates and maintains
+#     ▼
+# Pod
+#     │
+#     │ runs
+#     ▼
+# PostgreSQL container
+#
+# The Service is independent of this hierarchy.
+# It discovers the Pod through the "app=postgres" label
+# using its selector:
+#
+# Service
+#   selector: app=postgres
+#          │
+#          ▼
+#     PostgreSQL Pod
+
+
+# Workload management:  Deployment → ReplicaSet → Pod
+# Networking:  Service → selector → Pod
+# Storage:  Pod → volume → PVC → PV

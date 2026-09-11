@@ -1152,3 +1152,35 @@ kubectl port-forward service/<service-name> <local-port>:<service-port>
 #
 # Kubernetes continuously works to make
 # the actual state match the desired state.
+
+
+kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
+# kubectl run postgres-client → creates a temporary Pod.
+# --rm → deletes it when we exit.
+# -it → gives us an interactive terminal.
+# --restart=Never → creates a Pod directly, not a Deployment.
+# --image=postgres:17 → uses the PostgreSQL image.
+# -- bash → opens a Bash shell inside the container.
+
+
+# Verify Kubernetes Service networking from inside the cluster:
+#
+# 1. Create a temporary PostgreSQL client Pod:
+kubectl run postgres-client --rm -it --restart=Never --image=postgres:17 -- bash
+
+# 2. Verify Kubernetes DNS resolves the Service:
+getent hosts postgres
+
+# 3. Verify PostgreSQL is reachable through the Service:
+pg_isready -h postgres -p 5432
+
+# If pg_isready reports:
+#
+# postgres:5432 - accepting connections
+#
+# then DNS + Service routing + PostgreSQL connectivity are working.
+#
+# 4. Exit the temporary Pod:
+exit
+#
+# --rm automatically removes the temporary Pod.

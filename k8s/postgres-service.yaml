@@ -2,8 +2,14 @@ apiVersion: v1
 kind: Service
 
 metadata:
-  # postgres →becomes the DNS name your Spring Boot Pod can resolve
+  # The Service name becomes a stable DNS name inside the cluster.
+  # Spring Boot Pods can connect to PostgreSQL using:
+  #
+  # postgres:5432
+  #
+  # The PostgreSQL Pod IP may change, but the Service DNS name remains stable.
   name: postgres
+
 
 # Spring Boot Pod
 #      │
@@ -14,21 +20,42 @@ metadata:
 # │ ClusterIP       │
 # └────────┬────────┘
 #          │
+#          │ selects Pods with:
+#          │ app=postgres
 #          ▼
 # PostgreSQL Pod
-# 10.244.0.19:5432
+# <pod-ip>:5432
+
 
 spec:
   selector:
-    # selector: app: postgres → tells the Service which Pods receive traffic
+    # The Service sends traffic to Pods whose labels match:
+    #
+    # app: postgres
+    #
+    # This must match the labels defined in the PostgreSQL Deployment.
     app: postgres
 
   ports:
     - protocol: TCP
-      # port: 5432 → port exposed by the Service
+
+      # "port" is the port exposed by the Service.
+      #
+      # Other Pods connect to:
+      #
+      # postgres:5432
+      #
       port: 5432
-      # targetPort: 5432 → port on the PostgreSQL Pod
+
+      # "targetPort" is the port on the selected PostgreSQL Pod/container.
       targetPort: 5432
 
-  # ClusterIP → makes PostgreSQL accessible inside the Kubernetes cluster
+  # ClusterIP exposes PostgreSQL internally inside the Kubernetes cluster.
+  #
+  # It provides:
+  #   - a stable virtual IP
+  #   - a stable DNS name
+  #   - load balancing/routing to matching Pods
+  #
+  # It is NOT directly exposed to the external network.
   type: ClusterIP

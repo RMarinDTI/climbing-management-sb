@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        app: climbing-management
+        app: climbing-management           # ← Pod definition starts here
 
     spec:
       # The application does not need to access the Kubernetes API.

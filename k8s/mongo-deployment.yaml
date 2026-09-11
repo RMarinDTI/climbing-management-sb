@@ -11,7 +11,7 @@ spec:
     matchLabels:
       app: mongo
 
-  template:
+  template:                 # ← Pod definition starts here
     metadata:
       labels:
         app: mongo
