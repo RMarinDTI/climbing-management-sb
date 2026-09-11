@@ -532,40 +532,42 @@ kubectl get pv <pv-name> -o yaml
 24. POSTGRESQL PERSISTENT STORAGE ARCHITECTURE
     ==============================================
 
-# Provisioning:
+# PROVISIONING:
 #
 # PVC → StorageClass → PV
 #
 # The PVC requests storage.
 # The StorageClass defines how storage should be provisioned.
 # Kubernetes dynamically provisions a PV.
-
-# Consumption:
 #
-# Pod → PVC → PV
+#
+# CONSUMPTION:
+#
+# Pod → PVC → PV → Storage backend
 #
 # The Pod consumes the PVC.
 # The PVC is bound to the PV.
-# PostgreSQL mounts the volume.
-
-# Complete architecture:
+# The PV represents the persistent storage.
 #
-#             PVC
-#              │
-#              ▼
-#         StorageClass
-#              │
-#              ▼
-#             PV
-#              │
-#              ▼
-#             PVC
-#              │
-#              ▼
-#        PostgreSQL Pod
-#              │
-#              ▼
-# /var/lib/postgresql/data
+#
+# Complete conceptual architecture:
+#
+#                PVC
+#                 │
+#                 │ requests storage
+#                 ▼
+#           StorageClass
+#                 │
+#                 │ dynamically provisions
+#                 ▼
+#                PV
+#                 │
+#                 │ mounted through PVC
+#                 ▼
+#          PostgreSQL Pod
+#                 │
+#                 ▼
+#   /var/lib/postgresql/data
 
 
 25. POSTGRESQL DEPLOYMENT
@@ -683,7 +685,7 @@ kubectl get pod <pod-name> -o yaml
 
 # Concept:
 #
-# requests = resources Kubernetes reserves for scheduling
+# requests = resources reserved for scheduling
 #
 # limits = maximum resources the container can consume
 #
@@ -1734,7 +1736,7 @@ kubectl logs <application-pod>
 # INGRESS VS GATEWAY API
 #
 # Ingress:
-#   - Older Kubernetes HTTP routing API
+#   - Traditional Kubernetes API for HTTP/HTTPS routing
 #   - Simple and widely supported
 #   - Host/path routing
 #
@@ -1814,6 +1816,200 @@ kubectl logs <application-pod>
 #                                │
 #                                ▼
 #                       Persistent Storage
+
+
+54. NAMESPACES
+    ============
+
+# A Namespace provides a logical scope inside a Kubernetes cluster.
+#
+# Kubernetes cluster
+#        │
+#        ├── climbing-dev
+#        ├── climbing-prod
+#        ├── ingress-nginx
+#        └── kube-system
+#
+#
+# Namespaced resources include:
+#
+# - Pods
+# - Deployments
+# - ReplicaSets
+# - Services
+# - ConfigMaps
+# - Secrets
+# - PersistentVolumeClaims
+# - Ingresses
+# - HPAs
+#
+#
+# Cluster-scoped resources include:
+#
+# - Nodes
+# - PersistentVolumes
+# - StorageClasses
+# - Namespaces
+#
+#
+# List all namespaces.
+kubectl get namespaces
+
+# Show resources in a specific namespace.
+kubectl get all -n climbing-dev
+
+# Show Pods in a specific namespace.
+kubectl get pods -n climbing-dev
+
+# Show Deployments in a specific namespace.
+kubectl get deployments -n climbing-dev
+
+# Show Services in a specific namespace.
+kubectl get services -n climbing-dev
+
+
+# Create the development and production namespaces.
+#
+# These manifests are stored in:
+#
+# k8s/namespace-dev.yaml
+# k8s/namespace-prod.yaml
+#
+kubectl apply -f k8s/namespace-dev.yaml
+kubectl apply -f k8s/namespace-prod.yaml
+
+
+# SAME RESOURCE NAMES IN DIFFERENT NAMESPACES
+#
+# The same resource names are allowed because each Namespace
+# provides a separate naming scope.
+#
+# climbing-dev
+# └── namespace-demo
+#     └── namespace-demo-service
+#
+# climbing-prod
+# └── namespace-demo
+#     └── namespace-demo-service
+#
+#
+# The resources are different Kubernetes resources even though
+# they have the same names.
+#
+#
+# Service DNS in climbing-dev:
+#
+# namespace-demo-service.climbing-dev.svc.cluster.local
+#
+# Service DNS in climbing-prod:
+#
+# namespace-demo-service.climbing-prod.svc.cluster.local
+#
+#
+# Namespace is part of the Kubernetes resource identity.
+#
+# Therefore:
+#
+# namespace-demo-service + climbing-dev
+#
+# is different from:
+#
+# namespace-demo-service + climbing-prod
+
+
+# NAMESPACE IS NOT A COMPLETE SECURITY BOUNDARY
+#
+# Namespaces provide logical organization and scoping,
+# but they do not automatically isolate workloads securely.
+#
+# Additional Kubernetes mechanisms can provide stronger
+# isolation and control:
+#
+# - RBAC
+# - NetworkPolicy
+# - ResourceQuota
+# - LimitRange
+
+
+# NAMESPACE MENTAL MODEL
+#
+#                 Kubernetes Cluster
+#                         │
+#          ┌──────────────┴──────────────┐
+#          ▼                             ▼
+#    climbing-dev                  climbing-prod
+#          │                             │
+#     ┌────┴────┐                   ┌────┴────┐
+#     ▼         ▼                   ▼         ▼
+# Deployment  Service            Deployment  Service
+#     │         │                   │         │
+#     ▼         ▼                   ▼         ▼
+#    Pods    EndpointSlice         Pods    EndpointSlice
+
+
+# COMPLETE NAMESPACE + SERVICE DNS MODEL
+#
+# Client inside the cluster
+#          │
+#          ▼
+# Service name
+#          │
+#          ▼
+# namespace-demo-service.climbing-dev.svc.cluster.local
+#          │
+#          ▼
+# Kubernetes DNS
+#          │
+#          ▼
+# Service in climbing-dev
+#          │
+#          ▼
+# EndpointSlice
+#          │
+#          ▼
+# Pod
+
+
+# CLEAN UP TEMPORARY NAMESPACE EXPERIMENT RESOURCES
+#
+# IMPORTANT:
+#
+# Delete only the temporary Deployment and Service.
+# Keep the climbing-dev and climbing-prod Namespaces.
+#
+kubectl delete deployment namespace-demo -n climbing-dev
+kubectl delete service namespace-demo-service -n climbing-dev
+
+kubectl delete deployment namespace-demo -n climbing-prod
+kubectl delete service namespace-demo-service -n climbing-prod
+
+
+# Verify that the namespaces are still present.
+kubectl get namespaces
+
+# Verify that the namespaces are clean.
+kubectl get all -n climbing-dev
+kubectl get all -n climbing-prod
+
+
+# IMPORTANT NAMESPACE INTERVIEW MENTAL MODEL
+#
+# Namespace
+#    ↓
+# logical scope
+#    ↓
+# namespaced resources
+#    ↓
+# Pods / Deployments / Services / ConfigMaps / Secrets / etc.
+#
+#
+# A Namespace does NOT create:
+#
+# - a new node
+# - a new cluster
+# - a new VM
+#
+# Multiple namespaces can run on the same Kubernetes nodes.
 
 
 # END OF KUBERNETES COMMAND REFERENCE

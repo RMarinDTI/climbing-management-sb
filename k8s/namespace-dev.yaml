@@ -1,0 +1,188 @@
+apiVersion: v1
+kind: Namespace
+
+metadata:
+  name: climbing-dev
+
+
+# ============================================================
+# NAMESPACE
+# ============================================================
+#
+# A Namespace is a logical scope inside a Kubernetes cluster.
+#
+# Example:
+#
+# Kubernetes Cluster
+# │
+# ├── climbing-dev
+# ├── climbing-prod
+# ├── climbing-staging
+# └── ...
+#
+# Namespaced resources include:
+# - Pods
+# - Deployments
+# - ReplicaSets
+# - Services
+# - ConfigMaps
+# - Secrets
+# - PersistentVolumeClaims
+# - Ingresses
+# - HPAs
+#
+# Cluster-scoped resources include:
+# - Nodes
+# - PersistentVolumes
+# - StorageClasses
+# - Namespaces
+#
+# A Namespace is NOT a security boundary by itself.
+# RBAC and NetworkPolicies provide additional isolation/security.
+#
+#
+# Create the namespace:
+#
+# kubectl apply -f k8s/namespace-dev.yaml
+#
+# Verify:
+#
+# kubectl get namespaces
+#
+#
+# ============================================================
+# NAMESPACE-TEST DEPLOYMENT
+# ============================================================
+#
+# Create a temporary/demo Deployment inside climbing-dev:
+#
+# kubectl create deployment namespace-demo `
+#   --image=nginx `
+#   -n climbing-dev
+#
+# The Deployment creates and manages a ReplicaSet,
+# which creates and manages the Pod.
+#
+# Deployment
+#     │
+#     ▼
+# ReplicaSet
+#     │
+#     ▼
+#    Pod
+#
+#
+# ============================================================
+# SERVICE
+# ============================================================
+#
+# Expose the existing Deployment as a ClusterIP Service:
+#
+# kubectl expose deployment namespace-demo `
+#   --port=80 `
+#   --name=namespace-demo-service `
+#   -n climbing-dev
+#
+# The Service provides a stable virtual IP and DNS name.
+#
+#
+# ============================================================
+# SERVICE → ENDPOINTSLICE → POD
+# ============================================================
+#
+# The Service uses label selectors to identify matching Pods.
+#
+# Kubernetes maintains EndpointSlices containing the actual
+# network endpoints behind the Service.
+#
+# Modern Kubernetes uses EndpointSlice instead of the
+# deprecated Endpoints API.
+#
+# Check EndpointSlices:
+#
+# kubectl get endpointslice -n climbing-dev
+#
+#
+# ============================================================
+# SAME RESOURCE NAMES IN DIFFERENT NAMESPACES
+# ============================================================
+#
+# The same resource names are allowed because each Namespace
+# provides a separate naming scope.
+#
+# climbing-dev
+# └── namespace-demo
+#     └── namespace-demo-service
+#
+# climbing-prod
+# └── namespace-demo
+#     └── namespace-demo-service
+#
+# The resources are different Kubernetes resources even though
+# they have the same names.
+#
+#
+# Service DNS in climbing-dev:
+#
+# namespace-demo-service.climbing-dev.svc.cluster.local
+#
+# Service DNS in climbing-prod:
+#
+# namespace-demo-service.climbing-prod.svc.cluster.local
+#
+#
+# ============================================================
+# COMPLETE RELATIONSHIP
+# ============================================================
+#
+#                  climbing-dev
+#                       │
+#                       │
+#                ┌──────▼──────┐
+#                │ Deployment  │
+#                │ namespace-  │
+#                │    demo     │
+#                └──────┬──────┘
+#                       │
+#                       ▼
+#                ┌─────────────┐
+#                │  ReplicaSet │
+#                └──────┬──────┘
+#                       │
+#                       ▼
+#                ┌─────────────┐
+#                │     Pod     │
+#                │ namespace-  │
+#                │ demo-xxxxx  │
+#                │    :80      │
+#                └──────▲──────┘
+#                       │
+#                       │ selected Pod
+#                       │
+#                ┌──────┴───────┐
+#                │ EndpointSlice│
+#                │ 10.244.x.x   │
+#                │     :80      │
+#                └──────▲───────┘
+#                       │
+#                       │
+#                ┌──────┴──────┐
+#                │   Service   │
+#                │ namespace-  │
+#                │demo-service │
+#                │  ClusterIP  │
+#                └─────────────┘
+#
+#
+# ============================================================
+# CLEANUP
+# ============================================================
+#
+# Delete only the temporary/demo resources:
+#
+# kubectl delete deployment namespace-demo -n climbing-dev
+#
+# kubectl delete service namespace-demo-service -n climbing-dev
+#
+# Keep the climbing-dev Namespace because it represents the
+# development environment of the application.
