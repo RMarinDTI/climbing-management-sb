@@ -60,3 +60,31 @@ spec:
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 15
             periodSeconds: 10
+
+          # Mount the persistent storage inside the PostgreSQL container.
+          # volumeMounts → defines WHERE the volume is mounted inside the container.
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+
+      # Define the storage available to the Pod.
+      # volumes → defines WHERE the storage comes from.
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+
+
+#   PostgreSQL Pod
+#         │
+#         │ volumeMount
+#         ▼
+#   postgres-storage
+#         │
+#         │ uses
+#         ▼
+#     postgres-pvc
+#         │
+#         │ dynamically provisions
+#         ▼
+#   PersistentVolume

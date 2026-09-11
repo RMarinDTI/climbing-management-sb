@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: postgres-pvc
+
+spec:
+  # Request storage from the default StorageClass.
+  # In our local cluster, the default StorageClass is "standard".
+  # Kubernetes dynamically provisions a PersistentVolume (PV) for this claim.
+
+  # ReadWriteOnce (RWO) means the volume can be mounted as read-write
+  # by workloads on one node at a time.
+  # This is adequate for our single-node local PostgreSQL setup.
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      # Request 1 GiB of persistent storage.
+      storage: 1Gi
+
+# Storage relationship:
+#
+# PVC → requests storage
+# StorageClass → defines HOW storage is provisioned
+# PV → represents/provides the provisioned storage
+
+# Storage architecture:
+#
+#     PVC
+#       │
+#       │ requests storage
+#        ▼
+#   StorageClass
+#       │
+#       │ dynamically provisions
+#       ▼
+#       PV
+#       │
+#       │ is bound to
+#       ▼
+#      PVC
+#       │
+#       │ is consumed by
+#       ▼
+#    PostgreSQL Pod
+#       │
+#       │ mounts the volume at
+#       ▼
+#   /var/lib/postgresql/data
+
+# The important distinction:
+#
+# PVC = "I need storage"
+# StorageClass = "This is how storage should be provisioned"
+# PV = "This is the storage that was provisioned"
+# Pod = "I consume that storage"
+
+# Provisioning:  PVC → StorageClass → PV
+# Consumption:  Pod → PVC → PV
