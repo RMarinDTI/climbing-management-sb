@@ -70,10 +70,19 @@ The application is being developed incrementally, introducing technologies and a
 * **Startup probes**
 * **Readiness probes**
 * **Liveness probes**
-* **Rolling restarts**
+* **Rolling updates**
 * **Multiple application replicas**
-* **kubectl port-forward**
 * **EndpointSlices**
+* **PersistentVolumes**
+* **PersistentVolumeClaims**
+* **StorageClasses**
+* **Persistent PostgreSQL storage**
+* **Resource requests and limits**
+* **Metrics Server**
+* **Horizontal Pod Autoscaler (HPA)**
+* **Ingress**
+* **NGINX Ingress Controller**
+* **kubectl port-forward**
 
 ---
 
@@ -100,6 +109,33 @@ The application follows a layered architecture:
        ┌──────┴──────┐          │
        ▼             ▼          ▼
   PostgreSQL      MongoDB    MongoDB
+```
+
+The application is also deployed as a Kubernetes workload:
+
+```text
+                         Kubernetes
+                              │
+                         Ingress
+                              │
+                              ▼
+                    Application Service
+                              │
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+                 App Pod             App Pod
+                    │                   │
+                    └─────────┬─────────┘
+                              │
+                 ┌────────────┴────────────┐
+                 ▼                         ▼
+          PostgreSQL Service          MongoDB Service
+                 │                         │
+                 ▼                         ▼
+          PostgreSQL Pod              MongoDB Pod
+                 │
+                 ▼
+             PVC / PV
 ```
 
 ### Main layers
@@ -751,25 +787,44 @@ db.courses.aggregate([
 The equivalent Spring Data implementation uses:
 
 ```java
-Aggregation.newAggregation(...)
+Aggregation aggregation = Aggregation.newAggregation(
+        Aggregation.match(
+                Criteria.where("price").gte(100)
+        ),
+        Aggregation.group("difficulty")
+                .avg("price").as("averagePrice")
+                .count().as("courseCount"),
+        Aggregation.project()
+                .and("_id").as("difficulty")
+                .and("averagePrice").as("averagePrice")
+                .and("courseCount").as("courseCount")
+                .andExclude("_id"),
+        Aggregation.sort(
+                Sort.Direction.DESC,
+                "averagePrice"
+        )
+);
 ```
 
-with stages such as:
+The pipeline demonstrates:
 
 ```text
-Aggregation.match()
-Aggregation.group()
-Aggregation.project()
-Aggregation.sort()
+$match
+   ↓
+$group
+   ↓
+$project
+   ↓
+$sort
 ```
+
+This demonstrates server-side filtering, grouping, calculations, projection and sorting.
 
 The results are mapped to:
 
 ```java
 CourseDifficultyStatsDto
 ```
-
-This demonstrates server-side filtering, grouping, calculations, projection and sorting.
 
 ---
 
@@ -1395,11 +1450,30 @@ The Kubernetes environment currently consists of:
        Spring Boot     PostgreSQL     MongoDB
        Deployment      Deployment     Deployment
           │               │             │
-       2 Pods           1 Pod          1 Pod
+       2+ Pods           1 Pod          1 Pod
           │               │             │
           ▼               ▼             ▼
        Service          Service       Service
        :8080            :5432         :27017
+```
+
+The application is exposed externally through an Ingress layer:
+
+```text
+Client
+   │
+   ▼
+NGINX Ingress Controller
+   │
+   ▼
+Ingress rule
+   │
+   ▼
+climbing-management-service
+   │
+   ├──► App Pod #1
+   │
+   └──► App Pod #2
 ```
 
 ---
@@ -1408,20 +1482,35 @@ The Kubernetes environment currently consists of:
 
 The application is deployed using a Kubernetes `Deployment`.
 
-The current application configuration uses:
+The baseline configuration uses:
 
 ```yaml
 replicas: 2
 ```
 
-This creates two Spring Boot Pods:
+The application Deployment is also managed by an HPA with:
 
 ```text
-climbing-management
-        │
-        ├── App Pod #1
-        │
-        └── App Pod #2
+Minimum replicas: 2
+Maximum replicas: 5
+CPU target: 70%
+```
+
+This means the Deployment normally starts with two replicas but Kubernetes can automatically increase the number of Pods when CPU utilization exceeds the configured target.
+
+Conceptually:
+
+```text
+                   Deployment
+                       │
+                  HPA controls
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+        Minimum: 2          Maximum: 5
+             │
+             ▼
+       Spring Boot Pods
 ```
 
 The Deployment manages the Pods through a ReplicaSet.
@@ -1657,9 +1746,375 @@ The Deployment also maintains revision history, allowing previous versions to be
 
 ---
 
-# 🔌 Kubernetes Local Testing
+# 💾 Kubernetes Persistent Storage
 
-The application can be accessed locally using:
+PostgreSQL is configured with persistent storage so that database data survives Pod recreation.
+
+The storage architecture is:
+
+```text
+PostgreSQL Pod
+      │
+      ▼
+PersistentVolumeClaim
+      │
+      ▼
+PersistentVolume
+      │
+      ▼
+StorageClass
+      │
+      ▼
+Dynamically provisioned storage
+```
+
+The PostgreSQL PVC requests:
+
+```text
+Access mode:
+ReadWriteOnce
+
+Storage:
+requested by the PostgreSQL workload
+```
+
+The `ReadWriteOnce` access mode is appropriate for the single-node local PostgreSQL setup used in this project.
+
+The important Kubernetes storage concepts are:
+
+```text
+StorageClass
+    ↓
+Defines how storage is provisioned
+
+PersistentVolume
+    ↓
+Represents provisioned storage
+
+PersistentVolumeClaim
+    ↓
+Application request for storage
+
+Pod
+    ↓
+Mounts the PVC
+```
+
+This separates the application's storage requirement from the underlying storage implementation.
+
+---
+
+# 📊 Kubernetes Resource Requests and Limits
+
+The application Deployment defines CPU and memory resources.
+
+Current application configuration:
+
+```text
+CPU request:     250m
+Memory request:  512Mi
+
+CPU limit:       500m
+Memory limit:    1Gi
+```
+
+Conceptually:
+
+```text
+Request
+   ↓
+Resources reserved / used for scheduling decisions
+
+Limit
+   ↓
+Maximum resource consumption allowed by the container
+```
+
+The CPU request is especially important for the HPA because CPU utilization is calculated relative to the configured CPU request.
+
+For this application:
+
+```text
+CPU request = 250m
+HPA target   = 70%
+
+250m × 70% = 175m
+```
+
+Therefore approximately `175m` CPU utilization per Pod corresponds to the 70% HPA target.
+
+Resource requests also allow Kubernetes to make better scheduling decisions across nodes.
+
+---
+
+# 📈 Kubernetes Metrics Server
+
+The project uses **Metrics Server** to provide resource utilization metrics to Kubernetes.
+
+Metrics can be inspected using:
+
+```bash
+kubectl top nodes
+```
+
+and:
+
+```bash
+kubectl top pods
+```
+
+Example conceptual output:
+
+```text
+NAME                         CPU(cores)   MEMORY(bytes)
+climbing-management-xxxxx    120m         350Mi
+climbing-management-yyyyy    95m          340Mi
+```
+
+Metrics Server is required for the HPA to make CPU-based scaling decisions.
+
+The architecture is:
+
+```text
+Kubelet
+   │
+   ▼
+Metrics Server
+   │
+   ▼
+Kubernetes Metrics API
+   │
+   ▼
+HPA
+```
+
+---
+
+# 📈 Kubernetes Horizontal Pod Autoscaler
+
+The application uses a Kubernetes **Horizontal Pod Autoscaler**.
+
+The HPA configuration is:
+
+```text
+Target:
+climbing-management Deployment
+
+Minimum replicas:
+2
+
+Maximum replicas:
+5
+
+CPU target:
+70%
+```
+
+Conceptually:
+
+```text
+                  Metrics Server
+                       │
+                       ▼
+                      HPA
+                       │
+                 CPU utilization
+                       │
+                       ▼
+                 Application
+                 Deployment
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+          App Pods           App Pods
+```
+
+When CPU utilization increases above the target, the HPA increases the number of application replicas.
+
+When utilization decreases, Kubernetes can reduce the number of replicas, respecting the configured minimum.
+
+The HPA manages the Deployment's replica count rather than creating Pods directly.
+
+A simplified scaling calculation is:
+
+```text
+desired replicas =
+current replicas × current utilization / target utilization
+```
+
+For example:
+
+```text
+2 replicas
+146% CPU utilization
+70% target
+
+2 × 146 / 70
+≈ 4.17
+```
+
+The HPA therefore needs approximately 5 replicas, subject to Kubernetes rounding and the configured maximum.
+
+During load testing, the application demonstrated automatic scaling from:
+
+```text
+2 replicas
+    ↓
+4 replicas
+    ↓
+5 replicas
+```
+
+This demonstrates practical Kubernetes horizontal scaling.
+
+---
+
+# 🌐 Kubernetes Ingress
+
+The application is exposed through a Kubernetes **Ingress**.
+
+Ingress provides Layer 7 HTTP/HTTPS routing.
+
+The project uses:
+
+```text
+NGINX Ingress Controller
+```
+
+The request flow is:
+
+```text
+Client
+   │
+   ▼
+NGINX Ingress Controller
+   │
+   ▼
+Ingress rule
+   │
+   ▼
+climbing-management-service:8080
+   │
+   ├──► App Pod #1
+   │
+   └──► App Pod #2
+```
+
+The Ingress resource contains the host:
+
+```text
+climbing-management.local
+```
+
+and routes traffic to:
+
+```text
+climbing-management-service:8080
+```
+
+The Ingress definition is stored in:
+
+```text
+k8s/app-ingress.yaml
+```
+
+Conceptually:
+
+```text
+Host:
+climbing-management.local
+
+Path:
+/
+
+Backend:
+climbing-management-service:8080
+```
+
+Ingress is responsible for HTTP routing, while the Kubernetes Service remains responsible for stable internal access to the application Pods.
+
+---
+
+# 🚪 NGINX Ingress Controller
+
+The project uses the NGINX Ingress Controller to implement the Kubernetes Ingress resource.
+
+The controller watches Kubernetes Ingress resources and configures NGINX accordingly.
+
+The distinction is:
+
+```text
+Ingress
+   ↓
+Kubernetes routing configuration
+
+Ingress Controller
+   ↓
+Actual component implementing the routing
+```
+
+The project installs the NGINX Ingress Controller and verifies that the controller Pod is running.
+
+---
+
+# 🧪 Kubernetes Ingress Local Testing
+
+The Ingress was tested locally through a Kubernetes port-forward.
+
+The controller Service is forwarded to the local machine:
+
+```bash
+kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8081:80
+```
+
+The Ingress routing can then be tested with:
+
+```bash
+curl.exe -H "Host: climbing-management.local" http://localhost:8081/actuator/health
+```
+
+Expected response:
+
+```text
+up
+```
+
+The complete request path is:
+
+```text
+Windows host
+     │
+     ▼
+localhost:8081
+     │
+     ▼
+kubectl port-forward
+     │
+     ▼
+NGINX Ingress Controller
+     │
+     ▼
+Ingress rule
+     │
+     ▼
+climbing-management-service
+     │
+     ▼
+Spring Boot Pod
+     │
+     ▼
+/actuator/health
+```
+
+No Windows hosts-file modification is required for this local test because the HTTP `Host` header is supplied explicitly.
+
+The port-forward is a **development and testing mechanism**, not a production ingress architecture.
+
+---
+
+# 🔌 Kubernetes Local Testing Without Ingress
+
+The application can also be accessed directly through its Service using:
 
 ```bash
 kubectl port-forward service/climbing-management-service 8080:8080
@@ -1687,9 +2142,7 @@ Health can then be tested with:
 http://localhost:8080/actuator/health
 ```
 
-This is primarily a development and debugging mechanism.
-
-In a production environment, external traffic would normally enter through an ingress or gateway layer.
+This is useful for debugging the Service and application independently of the Ingress layer.
 
 ---
 
@@ -1703,6 +2156,10 @@ PostgreSQL Deployment
 PostgreSQL Service
         ↓
 postgres:5432
+        ↓
+PostgreSQL Pod
+        ↓
+PVC
 ```
 
 MongoDB is deployed internally as:
@@ -1713,9 +2170,13 @@ MongoDB Deployment
 MongoDB Service
         ↓
 mongo:27017
+        ↓
+MongoDB Pod
 ```
 
 Both database Services use `ClusterIP`, keeping the databases internal to the Kubernetes cluster.
+
+PostgreSQL is backed by persistent storage through a PVC.
 
 ---
 
@@ -2123,20 +2584,29 @@ The project is being developed progressively.
 * [x] Kubernetes startup probes
 * [x] Kubernetes readiness probes
 * [x] Kubernetes liveness probes
-* [x] Kubernetes rolling restart
+* [x] Kubernetes rolling updates
 * [x] Kubernetes multiple application replicas
 * [x] Kubernetes EndpointSlices
 * [x] Kubernetes database Services
 * [x] Kubernetes local application testing
+* [x] Kubernetes PersistentVolumes
+* [x] Kubernetes PersistentVolumeClaims
+* [x] Kubernetes StorageClasses
+* [x] PostgreSQL persistent storage
+* [x] Kubernetes resource requests
+* [x] Kubernetes resource limits
+* [x] Kubernetes Metrics Server
+* [x] Kubernetes `kubectl top`
+* [x] Kubernetes Horizontal Pod Autoscaler
+* [x] HPA CPU-based scaling
+* [x] HPA load testing
+* [x] Kubernetes Ingress
+* [x] NGINX Ingress Controller
+* [x] Ingress routing
+* [x] Local Ingress testing
 
 ## Current
 
-* [ ] Kubernetes persistent storage
-* [ ] Kubernetes PersistentVolumes / PersistentVolumeClaims
-* [ ] Kubernetes resource requests and limits
-* [ ] Kubernetes resource management
-* [ ] Kubernetes Horizontal Pod Autoscaler
-* [ ] Kubernetes Ingress / Gateway concepts
 * [ ] Kubernetes namespaces
 * [ ] Helm
 
@@ -2198,8 +2668,11 @@ Key areas include:
 * Kubernetes
 * Container orchestration
 * Service discovery
+* Persistent storage
+* Resource management
+* Horizontal autoscaling
+* Ingress and HTTP routing
 * Health probes
-* Horizontal scaling
 * Distributed systems
 * Messaging
 * Microservices
@@ -2338,6 +2811,12 @@ kubectl apply -f k8s/app-config.yaml
 kubectl apply -f k8s/app-secret.yaml
 ```
 
+Deploy PostgreSQL storage:
+
+```bash
+kubectl apply -f k8s/postgres-pvc.yaml
+```
+
 Deploy PostgreSQL:
 
 ```bash
@@ -2384,10 +2863,31 @@ Check EndpointSlices:
 kubectl get endpointslices
 ```
 
+Check persistent storage:
+
+```bash
+kubectl get pvc
+kubectl get pv
+kubectl get storageclass
+```
+
+Check resource usage:
+
+```bash
+kubectl top pods
+kubectl top nodes
+```
+
 Check the application Deployment:
 
 ```bash
 kubectl get deployment climbing-management
+```
+
+Check the HPA:
+
+```bash
+kubectl get hpa
 ```
 
 Check rollout status:
@@ -2428,6 +2928,28 @@ Readiness:
 
 ```text
 http://localhost:8080/actuator/health/readiness
+```
+
+---
+
+## Kubernetes Ingress Access
+
+Forward the NGINX Ingress Controller locally:
+
+```bash
+kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8081:80
+```
+
+Then test the Ingress routing:
+
+```bash
+curl.exe -H "Host: climbing-management.local" http://localhost:8081/actuator/health
+```
+
+Expected response:
+
+```text
+up
 ```
 
 ---
