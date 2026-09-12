@@ -1,0 +1,38 @@
+# Temporary diagnostic manifest used during Kubernetes troubleshooting.
+# Not part of the normal application deployment.
+
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: climbing-latest-test
+
+spec:
+  automountServiceAccountToken: false
+
+  containers:
+    - name: climbing-management
+
+      image: ghcr.io/rmarintech/climbing-management-sb:latest
+      imagePullPolicy: Always
+
+      envFrom:
+        - configMapRef:
+            name: climbing-management-config
+
+      env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: docker
+
+      volumeMounts:
+        - name: app-secret
+          mountPath: /run/secrets
+          readOnly: true
+
+  volumes:
+    - name: app-secret
+      secret:
+        secretName: climbing-management-secret
+        items:
+          - key: DB_PASSWORD
+            path: spring.datasource.password

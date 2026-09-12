@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  # Comes from Helm's release metadata
+  name: {{ .Release.Name }}-climbing-management
+
+spec:
+  # Comes from values-*.yaml
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: climbing-management
+
+  template:
+    metadata:
+      labels:
+        app: climbing-management
+
+    spec:
+
+      # The application does not need the Kubernetes API.
+      # Prevent Kubernetes from automatically mounting
+      # /var/run/secrets/kubernetes.io/serviceaccount.
+      automountServiceAccountToken: false
+
+
+      containers:
+        - name: climbing-management
+
+          # Comes from values-*.yaml
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+
+          # Comes from values-*.yaml
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          # Import non-sensitive configuration from the ConfigMap.
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.config.name }}
+
+          # Explicitly activate the Docker Spring profile.
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+
+          ports:
+            - containerPort: {{ .Values.service.port }}
+
+          # Mount the Kubernetes Secret as files under /run/secrets.
+          volumeMounts:
+            - name: app-secret
+              mountPath: /run/secrets
+              readOnly: true
+
+      # Define the Secret volume at Pod level.
+      volumes:
+        - name: app-secret
+          secret:
+            secretName: climbing-management-secret
+            items:
+              # Map Kubernetes Secret key DB_PASSWORD to the filename
+              # expected by Spring Boot ConfigTree.
+              - key: DB_PASSWORD
+                path: spring.datasource.password

@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  # Comes from Helm's release metadata
+  name: {{ .Release.Name }}-climbing-management
+
+spec:
+  # Comes from values-dev.yaml --> service.type: ClusterIP
+  type: {{ .Values.service.type }}
+
+  selector:
+    app: climbing-management
+
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+
+
+# ============================================================
+# SERVICE -> POD
+# ============================================================
+#
+# Service
+#    |
+#    | selector:
+#    | app=climbing-management
+#    |
+#    v
+# +----------------+
+# |      Pod       |
+# |                |
+# | app=climbing-  |
+# |   management   |
+# |                |
+# | Spring Boot    |
+# |    :8080       |
+# +----------------+
+#
+#
+# ============================================================
+# SERVICE -> MULTIPLE PODS
+# ============================================================
+#
+#                         Service
+#                            |
+#                            | selector:
+#                            | app=climbing-management
+#                            |
+#              +-------------+-------------+
+#              |             |             |
+#              v             v             v
+#            Pod 1         Pod 2         Pod 3
+#            :8080         :8080         :8080
+#
+# The Service provides a stable network endpoint and
+# distributes traffic to Pods matching its selector.
+#
+# Pods can be created, destroyed, or replaced while the
+# Service remains stable.
+# ============================================================

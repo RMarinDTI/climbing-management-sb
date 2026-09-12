@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/rmarintech/climbing-management-sb
+  #tag: latest
+  tag: "85126b7130d8493d8e0212e416599968c33290a1"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+config:
+  name: climbing-management-config
+
+  #         Helm Chart
+  #              │
+  #   ┌──────────┴──────────┐
+  #   │                     │
+  # values-dev.yaml       values-prod.yaml
+  #   │                     │
+  #   ▼                     ▼
+  # climbing-dev          climbing-prod
+  # image: 2.0             image: 1.0
+
