@@ -170,10 +170,11 @@ After a milestone:
 
 - [x] Monolith vs microservices
 - [x] Identify service boundaries
-- [ ] Define service responsibilities
-- [ ] Extract first service
-- [ ] Inter-service REST communication
-- [ ] Database-per-service
+- [x] Define service responsibilities
+- [x] Extract first service
+- [x] Independent persistence
+- [x] Database-per-service ownership
+- [x] Inter-service REST communication
 - [ ] Independent deployment
 - [ ] Failure isolation
 - [ ] Distributed-system trade-offs
